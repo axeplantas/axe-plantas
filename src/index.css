@@ -783,3 +783,11 @@ dl dd {
   font-size: 0.75rem;
   color: var(--sutil);
 }
+
+.alerta-zelador {
+  margin-top: 0.75rem;
+  padding: 0.25rem 0.75rem 0.5rem;
+  border-left: 4px solid var(--dourado);
+  background: #fff8e6;
+  border-radius: 8px;
+}

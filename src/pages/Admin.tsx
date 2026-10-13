@@ -64,16 +64,7 @@ export default function Admin() {
                 </span>
                 <span aria-hidden>{aberto === t.id ? '▲' : '▼'}</span>
               </button>
-              {aberto === t.id && (
-                <>
-                  <Convites terreiroId={t.id} tipo="zelador"
-                    titulo="Link para o zelador"
-                    explicacao="Quem entrar por este link já vira zelador(a) aprovado(a). Vale para uma pessoa e por 7 dias." />
-                  <Convites terreiroId={t.id} tipo="membro"
-                    titulo="Link para os filhos"
-                    explicacao="Normalmente o zelador gera este link. Quem entrar fica aguardando aprovação. Vale por 30 dias." />
-                </>
-              )}
+              {aberto === t.id && <LinksDoTerreiro terreiroId={t.id} temZelador={zeladores.length > 0} />}
             </div>
           )
         })}
@@ -107,6 +98,27 @@ export default function Admin() {
   )
 }
 
+function LinksDoTerreiro({ terreiroId, temZelador }: { terreiroId: string; temZelador: boolean }) {
+  const [mostrarZelador, setMostrarZelador] = useState(!temZelador)
+
+  return (
+    <>
+      <Convites terreiroId={terreiroId} tipo="membro"
+        titulo="👥 Link para os filhos (várias pessoas)"
+        explicacao="Este é o link para mandar no grupo da casa. Várias pessoas podem usar; cada uma fica aguardando aprovação. Vale por 30 dias." />
+      {mostrarZelador ? (
+        <div className="alerta-zelador">
+          <Convites terreiroId={terreiroId} tipo="zelador"
+            titulo="👑 Link para o zelador (1 pessoa só)"
+            explicacao="Atenção: quem entrar por este link vira ZELADOR(A) da casa. Funciona para uma única pessoa. Não mande no grupo." />
+        </div>
+      ) : (
+        <button className="link" onClick={() => setMostrarZelador(true)}>Convidar outro zelador(a)</button>
+      )}
+    </>
+  )
+}
+
 function NovoTerreiro({ aoCriar }: { aoCriar: () => Promise<void> }) {
   const [aberto, setAberto] = useState(false)
   const [nome, setNome] = useState('')
@@ -134,10 +146,16 @@ function NovoTerreiro({ aoCriar }: { aoCriar: () => Promise<void> }) {
     return (
       <div className="cartao">
         <h2>Terreiro “{nome}” criado!</h2>
-        <p>Agora envie este link para o zelador ou a zeladora. Quem entrar por ele já vira zelador(a) da casa.</p>
+        <p>
+          Agora envie este link <strong>somente para o zelador ou a zeladora</strong>, no privado. Ele funciona para uma
+          pessoa só: quem entrar vira zelador(a) da casa. Os filhos entram depois, pelo link que o zelador gera.
+        </p>
         <CompartilharLink link={link}
           mensagem="Você foi convidado(a) como zelador(a) no Axé Plantas, o mapa das folhas. Crie sua conta pelo link:" />
-        <p className="sutil">O link vale para uma pessoa e por 7 dias. Você pode gerar outro depois, na lista de terreiros.</p>
+        <p className="sutil">
+          Se você mesmo é o zelador desta casa, não envie este link: escolha a casa em “A minha casa”, aqui embaixo.
+          O link vale por 7 dias.
+        </p>
         <button className="link" onClick={() => { setAberto(false); setLink(null); setNome('') }}>Fechar</button>
       </div>
     )

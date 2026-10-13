@@ -55,7 +55,7 @@ export default function Painel() {
       {souZelador && perfil?.terreiro_id && (
         <section className="cartao">
           <Convites terreiroId={perfil.terreiro_id} tipo="membro"
-            titulo="Convidar filhos da casa"
+            titulo="👥 Convidar filhos da casa"
             explicacao="Envie o link pelo WhatsApp. Quem entrar por ele aparece aqui embaixo para você aprovar. O link vale por 30 dias e pode ser usado por várias pessoas." />
         </section>
       )}

@@ -103,7 +103,10 @@ export default function Entrar() {
       )}
       {infoConvite && modo === 'cadastrar' && <p className="aviso convite">{descreverConvite(infoConvite)}</p>}
       {conviteInvalido && (
-        <p className="erro">Este link de convite não vale mais (já foi usado ou venceu). Peça um novo ao seu zelador.</p>
+        <p className="erro">
+          Este link de convite já foi usado ou venceu. Links de zelador valem para uma pessoa só. Peça ao zelador da sua
+          casa o <strong>link para os filhos</strong>.
+        </p>
       )}
 
       <form onSubmit={enviar} className="formulario">
