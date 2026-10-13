@@ -2,10 +2,10 @@
 -- Axé Plantas — estrutura do banco de dados (Supabase / Postgres)
 --
 -- Como usar: no painel do Supabase, abra "SQL Editor", cole este arquivo
--- inteiro e clique em "Run". Pode ser executado mais de uma vez.
+-- inteiro e clique em "Run". Depois rode convites.sql e primeiro-admin.sql.
 --
 -- Regras principais:
---  * Ninguém entra sem o código de convite do terreiro.
+--  * Ninguém entra sem um link de convite (veja convites.sql).
 --  * Todo novo membro fica "aguardando" até um zelador da casa aprovar.
 --  * Folhas e pontos cadastrados por membros ficam pendentes até um
 --    validador (ou zelador) do MESMO terreiro aprovar.

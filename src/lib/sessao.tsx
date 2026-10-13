@@ -72,6 +72,10 @@ export function useSessao(): Sessao {
   return contexto
 }
 
+export function ehAdmin(perfil: Perfil | null): boolean {
+  return perfil?.aprovado === true && perfil.admin === true
+}
+
 export function ehValidador(perfil: Perfil | null): boolean {
   return perfil?.aprovado === true && (perfil.papel === 'validador' || perfil.papel === 'zelador')
 }

@@ -1,7 +1,8 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { configurado } from './lib/supabase'
-import { ehValidador, useSessao } from './lib/sessao'
+import { ehAdmin, ehValidador, useSessao } from './lib/sessao'
+import Admin from './pages/Admin'
 import Aguardando from './pages/Aguardando'
 import Entrar from './pages/Entrar'
 import FolhaDetalhe from './pages/FolhaDetalhe'
@@ -55,7 +56,8 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Mapa />} />
+          <Route index element={ehAdmin(perfil) && !perfil.terreiro_id ? <Navigate to="/admin" replace /> : <Mapa />} />
+          {ehAdmin(perfil) && <Route path="admin" element={<Admin />} />}
           <Route path="marcar" element={<NovoPonto />} />
           <Route path="folhas" element={<Folhas />} />
           <Route path="folhas/nova" element={<NovaFolha />} />

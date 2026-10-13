@@ -1,0 +1,201 @@
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import CompartilharLink from '../components/CompartilharLink'
+import Convites from '../components/Convites'
+import { useSessao } from '../lib/sessao'
+import { linkDoConvite, mensagemDeErro, supabase } from '../lib/supabase'
+import { ROTULO_PAPEL, type Papel, type Perfil, type Terreiro } from '../lib/tipos'
+
+const NACOES = ['Candomblé de Ketu', 'Candomblé de Angola', 'Candomblé Jeje', 'Umbanda', 'Umbanda / Jurema / Quimbanda', 'Jurema', 'Quimbanda']
+
+export default function Admin() {
+  const { perfil, recarregarPerfil } = useSessao()
+  const [terreiros, setTerreiros] = useState<Terreiro[]>([])
+  const [perfis, setPerfis] = useState<Perfil[]>([])
+  const [aberto, setAberto] = useState<string | null>(null)
+  const [erro, setErro] = useState('')
+
+  const carregar = useCallback(async () => {
+    const [t, p] = await Promise.all([
+      supabase.from('terreiros').select('id, nome, nacao').order('nome'),
+      supabase.from('perfis').select('*').order('created_at'),
+    ])
+    setTerreiros((t.data ?? []) as Terreiro[])
+    setPerfis((p.data ?? []) as Perfil[])
+  }, [])
+
+  useEffect(() => {
+    carregar()
+  }, [carregar])
+
+  async function executar(acao: PromiseLike<{ error: unknown }>) {
+    setErro('')
+    const { error } = await acao
+    if (error) setErro(mensagemDeErro(error))
+    await carregar()
+  }
+
+  const pendentes = perfis.filter((p) => !p.aprovado)
+  const nomeTerreiro = (id: string | null) => terreiros.find((t) => t.id === id)?.nome ?? 'Sem terreiro'
+
+  return (
+    <div className="pagina">
+      <h1>Administração</h1>
+      <p className="sutil">Só você vê esta área. Aqui você cria os terreiros e convida os zeladores.</p>
+      {erro && <p className="erro">{erro}</p>}
+
+      <NovoTerreiro aoCriar={carregar} />
+
+      <section>
+        <h2>Terreiros ({terreiros.length})</h2>
+        {terreiros.length === 0 && <p className="sutil">Nenhum terreiro ainda. Crie o primeiro acima.</p>}
+        {terreiros.map((t) => {
+          const membros = perfis.filter((p) => p.terreiro_id === t.id)
+          const zeladores = membros.filter((p) => p.papel === 'zelador' && p.aprovado)
+          return (
+            <div key={t.id} className="cartao">
+              <button className="cabecalho-botao" onClick={() => setAberto(aberto === t.id ? null : t.id)}>
+                <span>
+                  <strong>{t.nome}</strong>
+                  <span className="sutil"> · {t.nacao}</span>
+                  <div className="sutil">
+                    {membros.filter((m) => m.aprovado).length} membro(s) ·{' '}
+                    {zeladores.length > 0 ? `Zelador(a): ${zeladores.map((z) => z.apelido).join(', ')}` : 'Sem zelador ainda'}
+                  </div>
+                </span>
+                <span aria-hidden>{aberto === t.id ? '▲' : '▼'}</span>
+              </button>
+              {aberto === t.id && (
+                <>
+                  <Convites terreiroId={t.id} tipo="zelador"
+                    titulo="Link para o zelador"
+                    explicacao="Quem entrar por este link já vira zelador(a) aprovado(a). Vale para uma pessoa e por 7 dias." />
+                  <Convites terreiroId={t.id} tipo="membro"
+                    titulo="Link para os filhos"
+                    explicacao="Normalmente o zelador gera este link. Quem entrar fica aguardando aprovação. Vale por 30 dias." />
+                </>
+              )}
+            </div>
+          )
+        })}
+      </section>
+
+      <section>
+        <h2>Pedidos de entrada ({pendentes.length})</h2>
+        {pendentes.length === 0 && <p className="sutil">Nenhum pedido aguardando.</p>}
+        {pendentes.map((m) => (
+          <div key={m.id} className="cartao">
+            <strong>{m.apelido}</strong>
+            <div className="sutil">{nomeTerreiro(m.terreiro_id)} · pediu em {new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+            <div className="linha">
+              <button className="primario"
+                onClick={() => executar(supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: 'membro' }))}>
+                Aprovar
+              </button>
+              <button className="link perigo"
+                onClick={() => confirm(`Recusar e apagar o cadastro de ${m.apelido}?`) &&
+                  executar(supabase.rpc('remover_membro', { p_usuario: m.id }))}>
+                Recusar
+              </button>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <MinhaCasa terreiros={terreiros} aoSalvar={async () => { await recarregarPerfil(); await carregar() }}
+        atual={perfil?.terreiro_id ?? ''} papelAtual={perfil?.papel ?? 'membro'} />
+    </div>
+  )
+}
+
+function NovoTerreiro({ aoCriar }: { aoCriar: () => Promise<void> }) {
+  const [aberto, setAberto] = useState(false)
+  const [nome, setNome] = useState('')
+  const [nacao, setNacao] = useState(NACOES[0])
+  const [link, setLink] = useState<string | null>(null)
+  const [erro, setErro] = useState('')
+  const [salvando, setSalvando] = useState(false)
+
+  async function criar(e: FormEvent) {
+    e.preventDefault()
+    setErro('')
+    setSalvando(true)
+    const { data, error } = await supabase.rpc('criar_terreiro', { p_nome: nome, p_nacao: nacao })
+    setSalvando(false)
+    if (error) return setErro(mensagemDeErro(error))
+    setLink(linkDoConvite(data as string))
+    await aoCriar()
+  }
+
+  if (!aberto) {
+    return <button className="primario bloco" onClick={() => setAberto(true)}>+ Novo terreiro</button>
+  }
+
+  if (link) {
+    return (
+      <div className="cartao">
+        <h2>Terreiro “{nome}” criado!</h2>
+        <p>Agora envie este link para o zelador ou a zeladora. Quem entrar por ele já vira zelador(a) da casa.</p>
+        <CompartilharLink link={link}
+          mensagem="Você foi convidado(a) como zelador(a) no Axé Plantas, o mapa das folhas. Crie sua conta pelo link:" />
+        <p className="sutil">O link vale para uma pessoa e por 7 dias. Você pode gerar outro depois, na lista de terreiros.</p>
+        <button className="link" onClick={() => { setAberto(false); setLink(null); setNome('') }}>Fechar</button>
+      </div>
+    )
+  }
+
+  return (
+    <form className="cartao formulario" onSubmit={criar}>
+      <h2>Novo terreiro</h2>
+      <label>
+        Nome do terreiro
+        <input value={nome} onChange={(e) => setNome(e.target.value)} required maxLength={80} />
+      </label>
+      <label>
+        Nação / linha
+        <input list="nacoes" value={nacao} onChange={(e) => setNacao(e.target.value)} required maxLength={60} />
+        <datalist id="nacoes">
+          {NACOES.map((n) => <option key={n} value={n} />)}
+        </datalist>
+      </label>
+      {erro && <p className="erro">{erro}</p>}
+      <div className="linha">
+        <button className="primario" disabled={salvando}>{salvando ? 'Criando…' : 'Criar e gerar link do zelador'}</button>
+        <button type="button" className="link" onClick={() => setAberto(false)}>Cancelar</button>
+      </div>
+    </form>
+  )
+}
+
+function MinhaCasa({ terreiros, atual, papelAtual, aoSalvar }: {
+  terreiros: Terreiro[]
+  atual: string
+  papelAtual: Papel
+  aoSalvar: () => Promise<void>
+}) {
+  const [terreiro, setTerreiro] = useState(atual)
+  const [papel, setPapel] = useState<Papel>(papelAtual)
+  const [mensagem, setMensagem] = useState('')
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault()
+    const { error } = await supabase.rpc('entrar_no_terreiro', { p_terreiro: terreiro, p_papel: papel })
+    setMensagem(error ? mensagemDeErro(error) : 'Salvo!')
+    if (!error) await aoSalvar()
+  }
+
+  return (
+    <form className="cartao formulario" onSubmit={salvar}>
+      <h2>A minha casa</h2>
+      <p className="sutil">Para usar o mapa e as obrigações, escolha o terreiro do qual você faz parte.</p>
+      <select value={terreiro} onChange={(e) => setTerreiro(e.target.value)} required>
+        <option value="">Escolha…</option>
+        {terreiros.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+      </select>
+      <select value={papel} onChange={(e) => setPapel(e.target.value as Papel)}>
+        {(Object.keys(ROTULO_PAPEL) as Papel[]).map((p) => <option key={p} value={p}>{ROTULO_PAPEL[p]}</option>)}
+      </select>
+      {mensagem && <p className="aviso">{mensagem}</p>}
+      <button className="primario">Salvar</button>
+    </form>
+  )
+}

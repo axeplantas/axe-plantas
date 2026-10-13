@@ -7,8 +7,8 @@ Funciona no iPhone e no Android como **web app instalável** (PWA). É gratuito,
 
 ## Como funciona
 
-- **Entrada por convite:** a pessoa cria a conta com o **código do terreiro** e fica aguardando até o zelador aprovar.
-- **Papéis:** *membro* marca folhas; *validador* aprova folhas e pontos da sua casa; *zelador* também aprova membros e define os validadores.
+- **Entrada por link de convite:** o *administrador* cria os terreiros no app e envia um link ao zelador; o *zelador* entra já aprovado e envia um link aos filhos, que ficam aguardando a aprovação dele.
+- **Papéis:** *membro* marca folhas; *validador* aprova folhas e pontos da sua casa; *zelador* também convida e aprova membros e define os validadores; *administrador* cria terreiros e pode aprovar qualquer pessoa.
 - **Mapa compartilhado** entre os três terreiros. Cada ponto tem uma visibilidade: *Só eu*, *Meu terreiro* ou *Os três terreiros*.
 - **Obrigações:** lista de folhas para preparar uma obrigação, com o ponto mais perto de cada folha, "como chegar", marcação de colhida e progresso. Pode ser só sua ou da casa toda.
 - **Fundamento da casa:** os Orixás e os usos de cada folha são registrados por terreiro e **só a própria casa vê**.
@@ -29,7 +29,7 @@ Funciona no iPhone e no Android como **web app instalável** (PWA). É gratuito,
 1. Acesse <https://supabase.com> e crie uma conta com seu **e-mail pessoal**.
 2. Crie um projeto chamado `axe-plantas` na região **South America (São Paulo)**.
 3. Abra **SQL Editor**, cole o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
-4. Abra [`supabase/terreiros.sql`](supabase/terreiros.sql), troque os nomes e os **códigos de convite**, rode no SQL Editor e **depois desfaça** a alteração no arquivo, para que os códigos reais não fiquem salvos aqui.
+4. Rode também [`supabase/convites.sql`](supabase/convites.sql) e depois [`supabase/primeiro-admin.sql`](supabase/primeiro-admin.sql), que mostra o código do **link de convite do administrador**.
 5. Em **Authentication > Sign In / Providers > Email**, desligue **Confirm email**. A aprovação do zelador já protege a entrada, e o envio de e-mails do plano gratuito é bem limitado.
 6. Em **Authentication > URL Configuration**, coloque o endereço do app em **Site URL** (depois de publicado).
 
@@ -52,9 +52,9 @@ npm run dev
 ```
 Abra o endereço que aparecer (ex.: `http://localhost:5173`).
 
-### 5. Zeladores
-Depois que cada zelador criar a conta no app, rode no SQL Editor o comando do passo 2 de [`supabase/terreiros.sql`](supabase/terreiros.sql), trocando o e-mail.
-A partir daí, ele aprova os membros pela aba **Validar**.
+### 5. Terreiros e zeladores
+Tudo pelo app: o administrador entra em **Perfil › Administração**, cria cada terreiro e envia o link do zelador.
+O zelador convida os filhos e aprova os pedidos na aba **Validar**.
 
 ## Antes de publicar
 - [x] Responsável (Projeto Axé Plantas) e contato (axeplantas@gmail.com) preenchidos nas páginas legais.
@@ -68,7 +68,8 @@ Falta: contas de desenvolvedor (Apple US$ 99/ano, Google US$ 25 uma vez), empaco
 
 ```
 supabase/schema.sql      banco de dados e regras de segurança
-supabase/terreiros.sql   cadastro dos terreiros e zeladores
+supabase/convites.sql    links de convite e administração
+supabase/primeiro-admin.sql  gera o link do primeiro administrador
 src/pages/               telas (Mapa, Marcar, Folhas, Validar, Perfil…)
 src/lib/                 conexão com o Supabase, sessão, tipos, fotos, demonstração
 marca/                   símbolo original (simbolo.svg) e arquivos da logo

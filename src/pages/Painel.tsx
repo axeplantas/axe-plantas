@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Convites from '../components/Convites'
 import Foto from '../components/Foto'
 import { useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
@@ -50,6 +51,14 @@ export default function Painel() {
     <div className="pagina">
       <h1>Validar</h1>
       {erro && <p className="erro">{erro}</p>}
+
+      {souZelador && perfil?.terreiro_id && (
+        <section className="cartao">
+          <Convites terreiroId={perfil.terreiro_id} tipo="membro"
+            titulo="Convidar filhos da casa"
+            explicacao="Envie o link pelo WhatsApp. Quem entrar por ele aparece aqui embaixo para você aprovar. O link vale por 30 dias e pode ser usado por várias pessoas." />
+        </section>
+      )}
 
       {souZelador && (
         <section>

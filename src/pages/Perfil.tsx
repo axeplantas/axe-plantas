@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { useSessao } from '../lib/sessao'
+import { Link } from 'react-router-dom'
+import { ehAdmin, useSessao } from '../lib/sessao'
 import { BUCKET_FOTOS, mensagemDeErro, supabase } from '../lib/supabase'
 import { ROTULO_PAPEL } from '../lib/tipos'
 
@@ -19,10 +20,14 @@ export default function Perfil() {
     <div className="pagina">
       <h1>Perfil</h1>
       <div className="cartao">
-        <div><strong>{perfil?.terreiros?.nome}</strong></div>
+        <div><strong>{perfil?.terreiros?.nome ?? 'Sem terreiro'}</strong></div>
         <div className="sutil">{perfil?.terreiros?.nacao}</div>
         <div className="sutil">{perfil && ROTULO_PAPEL[perfil.papel]} · {sessao?.user.email}</div>
       </div>
+
+      {ehAdmin(perfil) && (
+        <Link to="/admin" className="botao bloco">⚙️ Administração (terreiros e convites)</Link>
+      )}
 
       <form className="formulario" onSubmit={salvar}>
         <label>

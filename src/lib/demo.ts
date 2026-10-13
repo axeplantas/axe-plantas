@@ -21,7 +21,7 @@ const banco: Record<string, Linha[]> = {
     { id: T3, nome: 'Terreiro Exemplo 3', nacao: 'Umbanda' },
   ],
   perfis: [
-    perfil(EU, 'Você (zelador)', T1, 'zelador', true),
+    { ...perfil(EU, 'Você (administrador)', T1, 'zelador', true), admin: true },
     perfil('demo-m1', 'Ana de Oxum', T1, 'membro', true),
     perfil('demo-m2', 'Carlos', T1, 'validador', true),
     perfil('demo-m3', 'Joana', T1, 'membro', false),
@@ -41,6 +41,7 @@ const banco: Record<string, Linha[]> = {
   ],
   fundamentos: [],
   pontos: [],
+  convites: [],
   obrigacoes: [
     {
       id: 'o1', nome: 'Obrigação de exemplo', data: new Date(Date.now() + 86400000 * 10).toISOString().slice(0, 10),
@@ -231,6 +232,31 @@ export function criarClienteDemo(): any {
   return {
     from: (tabela: string) => new Consulta(tabela),
     rpc: async (nome: string, args: any) => {
+      const novoConvite = (terreiro: string | null, tipo: string) => {
+        const codigo = Math.random().toString(36).slice(2, 14)
+        banco.convites.push({
+          id: crypto.randomUUID(), codigo, tipo, terreiro_id: terreiro, usos: 0, usos_max: tipo === 'membro' ? null : 1,
+          expira_em: new Date(Date.now() + 86400000 * (tipo === 'membro' ? 30 : 7)).toISOString(), ativo: true,
+          created_at: new Date().toISOString(),
+        })
+        return codigo
+      }
+      if (nome === 'info_convite') return { data: [], error: null }
+      if (nome === 'criar_convite') return { data: novoConvite(args.p_terreiro, args.p_tipo), error: null }
+      if (nome === 'criar_terreiro') {
+        const id = crypto.randomUUID()
+        banco.terreiros.push({ id, nome: args.p_nome, nacao: args.p_nacao })
+        return { data: novoConvite(id, 'zelador'), error: null }
+      }
+      if (nome === 'desativar_convite') {
+        const c = banco.convites.find((x) => x.id === args.p_convite)
+        if (c) c.ativo = false
+        return { data: null, error: null }
+      }
+      if (nome === 'entrar_no_terreiro') {
+        Object.assign(banco.perfis.find((x) => x.id === EU)!, { terreiro_id: args.p_terreiro, papel: args.p_papel })
+        return { data: null, error: null }
+      }
       if (nome === 'excluir_minha_conta') {
         alert('Demonstração: a conta seria excluída agora. Nada foi apagado.')
         return { data: null, error: null }

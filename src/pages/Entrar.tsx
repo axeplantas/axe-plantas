@@ -1,20 +1,51 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { mensagemDeErro, modoDemo, supabase, VERSAO_TERMOS } from '../lib/supabase'
 
 type Modo = 'entrar' | 'cadastrar' | 'esqueci'
 
+interface InfoConvite {
+  tipo: 'admin' | 'zelador' | 'membro'
+  terreiro: string | null
+  nacao: string | null
+}
+
+/** Código do convite que veio no link (…/?convite=abc123). */
+function conviteDoLink(): string | null {
+  return new URLSearchParams(window.location.search).get('convite')
+}
+
+function descreverConvite(info: InfoConvite): string {
+  if (info.tipo === 'admin') return 'Você foi convidado(a) para administrar o Axé Plantas.'
+  if (info.tipo === 'zelador') return `Você foi convidado(a) como zelador(a) de ${info.terreiro}.`
+  return `Você foi convidado(a) para entrar em ${info.terreiro}.`
+}
+
 export default function Entrar() {
-  const [modo, setModo] = useState<Modo>('entrar')
+  const [convite] = useState(conviteDoLink)
+  const [infoConvite, setInfoConvite] = useState<InfoConvite | null>(null)
+  const [conviteInvalido, setConviteInvalido] = useState(false)
+  const [modo, setModo] = useState<Modo>(convite ? 'cadastrar' : 'entrar')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [apelido, setApelido] = useState('')
-  const [codigo, setCodigo] = useState('')
   const [aceite, setAceite] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState('')
 
   const enderecoDoApp = window.location.origin + window.location.pathname
+
+  useEffect(() => {
+    if (!convite) return
+    supabase.rpc('info_convite', { p_codigo: convite }).then(({ data }) => {
+      const info = (data as InfoConvite[] | null)?.[0]
+      if (info) setInfoConvite(info)
+      else {
+        setConviteInvalido(true)
+        setModo('entrar')
+      }
+    })
+  }, [convite])
 
   async function enviar(e: FormEvent) {
     e.preventDefault()
@@ -30,11 +61,13 @@ export default function Entrar() {
           email,
           password: senha,
           options: {
-            data: { apelido, codigo_convite: codigo, consentimento: aceite, versao_termos: VERSAO_TERMOS },
+            data: { apelido, convite, consentimento: aceite, versao_termos: VERSAO_TERMOS },
             emailRedirectTo: enderecoDoApp,
           },
         })
         if (error) throw error
+        // Tira o convite do endereço: ele já foi usado.
+        window.history.replaceState(null, '', enderecoDoApp)
         if (!data.session) setAviso('Cadastro feito! Confira seu e-mail para confirmar a conta.')
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: enderecoDoApp })
@@ -58,29 +91,28 @@ export default function Entrar() {
         </p>
       )}
 
-      <div className="abas">
-        <button className={modo === 'entrar' ? 'ativa' : ''} onClick={() => setModo('entrar')} type="button">
-          Entrar
-        </button>
-        <button className={modo === 'cadastrar' ? 'ativa' : ''} onClick={() => setModo('cadastrar')} type="button">
-          Criar conta
-        </button>
-      </div>
+      {infoConvite && (
+        <div className="abas">
+          <button className={modo === 'entrar' ? 'ativa' : ''} onClick={() => setModo('entrar')} type="button">
+            Já tenho conta
+          </button>
+          <button className={modo === 'cadastrar' ? 'ativa' : ''} onClick={() => setModo('cadastrar')} type="button">
+            Criar conta
+          </button>
+        </div>
+      )}
+      {infoConvite && modo === 'cadastrar' && <p className="aviso convite">{descreverConvite(infoConvite)}</p>}
+      {conviteInvalido && (
+        <p className="erro">Este link de convite não vale mais (já foi usado ou venceu). Peça um novo ao seu zelador.</p>
+      )}
 
       <form onSubmit={enviar} className="formulario">
         {modo === 'cadastrar' && (
-          <>
-            <label>
-              Como quer ser chamado(a)
-              <input value={apelido} onChange={(e) => setApelido(e.target.value)} required maxLength={40}
-                placeholder="Apelido ou nome de santo" />
-            </label>
-            <label>
-              Código do terreiro
-              <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required autoCapitalize="characters"
-                placeholder="Peça ao seu zelador" />
-            </label>
-          </>
+          <label>
+            Como quer ser chamado(a)
+            <input value={apelido} onChange={(e) => setApelido(e.target.value)} required maxLength={40}
+              placeholder="Apelido ou nome de santo" />
+          </label>
         )}
         <label>
           E-mail
@@ -122,6 +154,9 @@ export default function Entrar() {
         <button type="button" className="link" onClick={() => setModo('entrar')}>
           Voltar
         </button>
+      )}
+      {!convite && modo === 'entrar' && (
+        <p className="sutil">Ainda não tem conta? Peça o link de convite ao zelador da sua casa.</p>
       )}
 
       <p className="rodape-legal">

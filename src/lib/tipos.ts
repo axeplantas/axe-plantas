@@ -10,9 +10,10 @@ export interface Terreiro {
 export interface Perfil {
   id: string
   apelido: string
-  terreiro_id: string
+  terreiro_id: string | null
   papel: Papel
   aprovado: boolean
+  admin?: boolean
   consentimento_em?: string | null
   created_at: string
   terreiros?: Pick<Terreiro, 'nome' | 'nacao'> | null
@@ -85,4 +86,18 @@ export interface ItemObrigacao {
   quantidade: string | null
   colhida: boolean
   folhas: Pick<Folha, 'nome_popular' | 'nome_ritual' | 'toxica' | 'alerta'> | null
+}
+
+export type TipoConvite = 'admin' | 'zelador' | 'membro'
+
+export interface Convite {
+  id: string
+  codigo: string
+  tipo: TipoConvite
+  terreiro_id: string | null
+  usos: number
+  usos_max: number | null
+  expira_em: string | null
+  ativo: boolean
+  created_at: string
 }

@@ -28,8 +28,8 @@ export function mensagemDeErro(erro: unknown): string {
   const msg = erro instanceof Error ? erro.message : String((erro as { message?: string })?.message ?? erro)
   if (msg.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.'
   if (msg.includes('User already registered')) return 'Este e-mail já tem cadastro. Use "Entrar".'
-  if (msg.includes('Database error saving new user') || msg.includes('codigo_convite_invalido'))
-    return 'Código do terreiro inválido. Confira com o seu zelador.'
+  if (msg.includes('Database error saving new user') || msg.includes('convite_invalido'))
+    return 'Este link de convite não vale mais. Peça um novo ao seu zelador.'
   if (msg.includes('consentimento_obrigatorio')) return 'É preciso aceitar os termos e a política de privacidade.'
   if (msg.includes('unico_zelador'))
     return 'Você é o único zelador da casa. Passe o cargo para outra pessoa (aba Validar) antes de excluir a conta.'
@@ -38,4 +38,9 @@ export function mensagemDeErro(erro: unknown): string {
   if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde alguns minutos.'
   if (msg.includes('Failed to fetch')) return 'Sem conexão com a internet.'
   return msg
+}
+
+/** Endereço que a pessoa abre para criar a conta com um convite. */
+export function linkDoConvite(codigo: string): string {
+  return `${window.location.origin}${window.location.pathname}?convite=${codigo}`
 }
