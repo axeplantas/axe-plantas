@@ -57,7 +57,7 @@ Depois que cada zelador criar a conta no app, rode no SQL Editor o comando do pa
 A partir daí, ele aprova os membros pela aba **Validar**.
 
 ## Antes de publicar
-- [ ] Preencher **[NOME DO RESPONSÁVEL]** e **[E-MAIL DE CONTATO]** em `public/privacidade.html` e `public/termos.html` (os trechos aparecem destacados em amarelo).
+- [x] Responsável (Projeto Axé Plantas) e contato (axeplantas@gmail.com) preenchidos nas páginas legais.
 - [ ] Recomendado: pedir que um advogado revise a Política de Privacidade e os Termos de Uso.
 
 ## Para virar app de loja (depois do piloto)
