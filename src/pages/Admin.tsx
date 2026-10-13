@@ -187,7 +187,8 @@ function MinhaCasa({ terreiros, atual, papelAtual, aoSalvar }: {
     <form className="cartao formulario" onSubmit={salvar}>
       <h2>A minha casa</h2>
       <p className="sutil">Para usar o mapa e as obrigações, escolha o terreiro do qual você faz parte.</p>
-      <select value={terreiro} onChange={(e) => setTerreiro(e.target.value)} required>
+      {terreiros.length === 0 && <p className="aviso">Primeiro crie o terreiro em “+ Novo terreiro”, lá em cima.</p>}
+      <select value={terreiro} onChange={(e) => setTerreiro(e.target.value)} required disabled={terreiros.length === 0}>
         <option value="">Escolha…</option>
         {terreiros.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
       </select>
@@ -195,7 +196,7 @@ function MinhaCasa({ terreiros, atual, papelAtual, aoSalvar }: {
         {(Object.keys(ROTULO_PAPEL) as Papel[]).map((p) => <option key={p} value={p}>{ROTULO_PAPEL[p]}</option>)}
       </select>
       {mensagem && <p className="aviso">{mensagem}</p>}
-      <button className="primario">Salvar</button>
+      <button className="primario" disabled={terreiros.length === 0}>Salvar</button>
     </form>
   )
 }

@@ -15,6 +15,7 @@ import ObrigacaoDetalhe from './pages/ObrigacaoDetalhe'
 import Obrigacoes from './pages/Obrigacoes'
 import Painel from './pages/Painel'
 import Perfil from './pages/Perfil'
+import SemCasa from './pages/SemCasa'
 
 export default function App() {
   const { sessao, perfil, carregando, recuperandoSenha, sair } = useSessao()
@@ -52,18 +53,31 @@ export default function App() {
 
   if (!perfil.aprovado) return <Aguardando />
 
+  const semCasa = !perfil.terreiro_id
+
   return (
     <HashRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={ehAdmin(perfil) && !perfil.terreiro_id ? <Navigate to="/admin" replace /> : <Mapa />} />
           {ehAdmin(perfil) && <Route path="admin" element={<Admin />} />}
-          <Route path="marcar" element={<NovoPonto />} />
-          <Route path="folhas" element={<Folhas />} />
-          <Route path="folhas/nova" element={<NovaFolha />} />
-          <Route path="folhas/:id" element={<FolhaDetalhe />} />
-          <Route path="obrigacoes" element={<Obrigacoes />} />
-          <Route path="obrigacoes/:id" element={<ObrigacaoDetalhe />} />
+          {semCasa ? (
+            <>
+              <Route index element={<SemCasa />} />
+              <Route path="marcar" element={<SemCasa />} />
+              <Route path="folhas/*" element={<SemCasa />} />
+              <Route path="obrigacoes/*" element={<SemCasa />} />
+            </>
+          ) : (
+            <>
+              <Route index element={<Mapa />} />
+              <Route path="marcar" element={<NovoPonto />} />
+              <Route path="folhas" element={<Folhas />} />
+              <Route path="folhas/nova" element={<NovaFolha />} />
+              <Route path="folhas/:id" element={<FolhaDetalhe />} />
+              <Route path="obrigacoes" element={<Obrigacoes />} />
+              <Route path="obrigacoes/:id" element={<ObrigacaoDetalhe />} />
+            </>
+          )}
           {ehValidador(perfil) && <Route path="painel" element={<Painel />} />}
           <Route path="perfil" element={<Perfil />} />
           <Route path="*" element={<Navigate to="/" replace />} />
