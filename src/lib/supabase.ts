@@ -1,0 +1,41 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { criarClienteDemo } from './demo'
+
+const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
+const chave = import.meta.env.VITE_SUPABASE_KEY as string | undefined
+
+/** Modo demonstração: dados de exemplo, nada é salvo (npm run demo). */
+export const modoDemo = import.meta.env.VITE_DEMO === 'true'
+
+export const configurado = modoDemo || Boolean(url && chave)
+
+export const supabase: SupabaseClient = modoDemo
+  ? (criarClienteDemo() as SupabaseClient)
+  : createClient(url ?? 'http://localhost', chave ?? 'sem-chave', { auth: { flowType: 'pkce' } })
+
+export const BUCKET_FOTOS = 'fotos'
+
+/** Versão dos termos e da política aceitos no cadastro. Mude ao alterar os textos. */
+export const VERSAO_TERMOS = '2026-10'
+
+export async function urlDaFoto(caminho: string): Promise<string | null> {
+  const { data } = await supabase.storage.from(BUCKET_FOTOS).createSignedUrl(caminho, 60 * 60)
+  return data?.signedUrl ?? null
+}
+
+/** Traduz as mensagens de erro mais comuns para o português. */
+export function mensagemDeErro(erro: unknown): string {
+  const msg = erro instanceof Error ? erro.message : String((erro as { message?: string })?.message ?? erro)
+  if (msg.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.'
+  if (msg.includes('User already registered')) return 'Este e-mail já tem cadastro. Use "Entrar".'
+  if (msg.includes('Database error saving new user') || msg.includes('codigo_convite_invalido'))
+    return 'Código do terreiro inválido. Confira com o seu zelador.'
+  if (msg.includes('consentimento_obrigatorio')) return 'É preciso aceitar os termos e a política de privacidade.'
+  if (msg.includes('unico_zelador'))
+    return 'Você é o único zelador da casa. Passe o cargo para outra pessoa (aba Validar) antes de excluir a conta.'
+  if (msg.includes('Password should be at least')) return 'A senha precisa ter pelo menos 6 caracteres.'
+  if (msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.'
+  if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde alguns minutos.'
+  if (msg.includes('Failed to fetch')) return 'Sem conexão com a internet.'
+  return msg
+}
