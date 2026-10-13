@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { Folha } from '../lib/tipos'
 
 function semAcento(texto: string): string {
-  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
 }
 
 export default function Folhas() {

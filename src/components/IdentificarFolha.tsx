@@ -4,7 +4,7 @@ import { useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
 import type { Folha } from '../lib/tipos'
 
-export type FolhaResumo = Pick<Folha, 'id' | 'nome_popular' | 'nome_cientifico' | 'status'>
+export type FolhaResumo = Pick<Folha, 'id' | 'nome_popular' | 'nome_cientifico' | 'outros_nomes' | 'status'>
 
 interface Sugestao {
   cientifico: string
@@ -13,9 +13,32 @@ interface Sugestao {
   confianca: number
 }
 
-/** "Schinus terebinthifolia Raddi" → "schinus terebinthifolia" (gênero + espécie). */
+/** "Schinus terebinthifolia Raddi" → "schinus terebinthifolia"; "Mentha × piperita" → "mentha piperita". */
 function especie(nome: string | null): string {
-  return (nome ?? '').toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).join(' ')
+  return (nome ?? '')
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, ' ')
+    .split(/\s+/)
+    .filter((parte) => parte && parte !== 'x')
+    .slice(0, 2)
+    .join(' ')
+}
+
+/** "Erva-Cidreira " → "erva cidreira" (sem acento, sem hífen). */
+function nomeSimples(nome: string): string {
+  return nome.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z]+/g, ' ').trim()
+}
+
+/** Procura a folha do catálogo pelo nome científico ou, se não achar, pelo nome popular. */
+function acharNoCatalogo(s: { cientifico: string; nomes: string[] }, folhas: FolhaResumo[]): FolhaResumo | undefined {
+  const porCientifico = folhas.find((f) => especie(f.nome_cientifico) === especie(s.cientifico))
+  if (porCientifico) return porCientifico
+  const nomesSugeridos = new Set(s.nomes.map(nomeSimples))
+  return folhas.find((f) =>
+    [f.nome_popular, ...(f.outros_nomes ?? '').split(',')]
+      .map(nomeSimples)
+      .some((n) => n && nomesSugeridos.has(n)),
+  )
 }
 
 function capitalizar(texto: string): string {
@@ -34,7 +57,7 @@ export default function IdentificarFolha({ foto, folhas, aoEscolher }: {
   const [salvando, setSalvando] = useState<string | null>(null)
   const [erro, setErro] = useState('')
 
-  const noCatalogo = (s: Sugestao) => folhas.find((f) => especie(f.nome_cientifico) === especie(s.cientifico))
+  const noCatalogo = (s: Sugestao) => acharNoCatalogo(s, folhas)
 
   async function identificar() {
     setErro('')
@@ -70,7 +93,7 @@ export default function IdentificarFolha({ foto, folhas, aoEscolher }: {
         nome_cientifico: s.cientifico,
         terreiro_id: perfil.terreiro_id,
       })
-      .select('id, nome_popular, nome_cientifico, status')
+      .select('id, nome_popular, nome_cientifico, outros_nomes, status')
       .single()
     setSalvando(null)
     if (error) return setErro(mensagemDeErro(error))

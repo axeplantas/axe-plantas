@@ -30,7 +30,7 @@ export default function NovoPonto() {
   useEffect(() => {
     supabase
       .from('folhas')
-      .select('id, nome_popular, nome_cientifico, status')
+      .select('id, nome_popular, nome_cientifico, outros_nomes, status')
       .neq('status', 'recusada')
       .order('nome_popular')
       .then(({ data }) => setFolhas(data ?? []))
