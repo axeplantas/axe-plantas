@@ -2,17 +2,19 @@ import type { LatLngExpression } from 'leaflet'
 import { useEffect, useState, type FormEvent } from 'react'
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import IdentificarFolha, { type FolhaResumo } from '../components/IdentificarFolha'
 import { prepararFoto } from '../lib/imagem'
 import { useSessao } from '../lib/sessao'
 import { BUCKET_FOTOS, mensagemDeErro, supabase } from '../lib/supabase'
-import { ROTULO_VISIBILIDADE, type Folha, type Visibilidade } from '../lib/tipos'
+import { ROTULO_VISIBILIDADE, type Visibilidade } from '../lib/tipos'
 
 export default function NovoPonto() {
   const { perfil } = useSessao()
   const navegar = useNavigate()
   const [params] = useSearchParams()
 
-  const [folhas, setFolhas] = useState<Pick<Folha, 'id' | 'nome_popular' | 'status'>[]>([])
+  const [folhas, setFolhas] = useState<FolhaResumo[]>([])
+  const [folhaNova, setFolhaNova] = useState(false)
   const [folhaId, setFolhaId] = useState(params.get('folha') ?? '')
   const [posicao, setPosicao] = useState<[number, number] | null>(null)
   const [precisao, setPrecisao] = useState<number | null>(null)
@@ -28,7 +30,7 @@ export default function NovoPonto() {
   useEffect(() => {
     supabase
       .from('folhas')
-      .select('id, nome_popular, status')
+      .select('id, nome_popular, nome_cientifico, status')
       .neq('status', 'recusada')
       .order('nome_popular')
       .then(({ data }) => setFolhas(data ?? []))
@@ -96,7 +98,41 @@ export default function NovoPonto() {
       <h1>Marcar uma folha</h1>
 
       <section>
-        <h2>1. Onde está?</h2>
+        <h2>1. Foto</h2>
+        <label className="botao-foto">
+          {previa ? <img src={previa} alt="Prévia" className="foto" /> : '📷 Tirar ou escolher foto'}
+          <input type="file" accept="image/*" capture="environment" hidden
+            onChange={(e) => setFoto(e.target.files?.[0] ?? null)} />
+        </label>
+        {foto && (
+          <IdentificarFolha key={previa} foto={foto} folhas={folhas}
+            aoEscolher={(folha, nova) => {
+              if (nova) setFolhas((lista) => [...lista, folha].sort((a, b) => a.nome_popular.localeCompare(b.nome_popular, 'pt-BR')))
+              setFolhaId(folha.id)
+              setFolhaNova(nova)
+            }} />
+        )}
+      </section>
+
+      <section>
+        <h2>2. Qual folha?</h2>
+        <select value={folhaId} onChange={(e) => { setFolhaId(e.target.value); setFolhaNova(false) }} required>
+          <option value="">Escolha…</option>
+          {folhas.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.nome_popular}
+              {f.status === 'pendente' ? ' (em validação)' : ''}
+            </option>
+          ))}
+        </select>
+        {folhaNova && (
+          <p className="aviso">Folha nova cadastrada a partir da foto. O validador da sua casa vai conferir o nome.</p>
+        )}
+        <Link to="/folhas/nova" className="link">Não achou? Cadastrar uma folha nova</Link>
+      </section>
+
+      <section>
+        <h2>3. Onde está?</h2>
         <p className="sutil">Arraste o mapa até a mira ficar em cima da planta.</p>
         <div className="mapa-mira">
           {posicao ? (
@@ -123,29 +159,6 @@ export default function NovoPonto() {
             </button>
           )}
         </div>
-      </section>
-
-      <section>
-        <h2>2. Qual folha?</h2>
-        <select value={folhaId} onChange={(e) => setFolhaId(e.target.value)} required>
-          <option value="">Escolha…</option>
-          {folhas.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.nome_popular}
-              {f.status === 'pendente' ? ' (em validação)' : ''}
-            </option>
-          ))}
-        </select>
-        <Link to="/folhas/nova" className="link">Não achou? Cadastrar uma folha nova</Link>
-      </section>
-
-      <section>
-        <h2>3. Foto</h2>
-        <label className="botao-foto">
-          {previa ? <img src={previa} alt="Prévia" className="foto" /> : '📷 Tirar ou escolher foto'}
-          <input type="file" accept="image/*" capture="environment" hidden
-            onChange={(e) => setFoto(e.target.files?.[0] ?? null)} />
-        </label>
       </section>
 
       <section>

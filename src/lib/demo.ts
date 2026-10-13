@@ -283,6 +283,21 @@ export function criarClienteDemo(): any {
         return { error: null }
       },
     },
+    functions: {
+      invoke: async () => {
+        await new Promise((r) => setTimeout(r, 900))
+        return {
+          data: {
+            sugestoes: [
+              { cientifico: 'Schinus terebinthifolia', familia: 'Anacardiaceae', nomes: ['aroeira', 'aroeira-vermelha'], confianca: 87 },
+              { cientifico: 'Schinus molle', familia: 'Anacardiaceae', nomes: ['aroeira-salsa', 'pimenteira'], confianca: 6 },
+              { cientifico: 'Lithraea molleoides', familia: 'Anacardiaceae', nomes: ['aroeira-branca'], confianca: 2 },
+            ],
+          },
+          error: null,
+        }
+      },
+    },
     storage: {
       from: () => ({
         upload: async (caminho: string, arquivo: Blob) => {
