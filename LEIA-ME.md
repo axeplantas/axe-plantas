@@ -29,7 +29,7 @@ Funciona no iPhone e no Android como **web app instalável** (PWA). É gratuito,
 1. Acesse <https://supabase.com> e crie uma conta com seu **e-mail pessoal**.
 2. Crie um projeto chamado `axe-plantas` na região **South America (São Paulo)**.
 3. Abra **SQL Editor**, cole o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
-4. Rode também [`supabase/convites.sql`](supabase/convites.sql) e depois [`supabase/primeiro-admin.sql`](supabase/primeiro-admin.sql), que mostra o código do **link de convite do administrador**.
+4. Rode também [`supabase/convites.sql`](supabase/convites.sql), [`supabase/catalogo-inicial.sql`](supabase/catalogo-inicial.sql) (61 folhas comuns, sem fundamento) e por fim [`supabase/primeiro-admin.sql`](supabase/primeiro-admin.sql), que mostra o código do **link de convite do administrador**.
 5. Em **Authentication > Sign In / Providers > Email**, desligue **Confirm email**. A aprovação do zelador já protege a entrada, e o envio de e-mails do plano gratuito é bem limitado.
 6. Em **Authentication > URL Configuration**, coloque o endereço do app em **Site URL** (depois de publicado).
 
