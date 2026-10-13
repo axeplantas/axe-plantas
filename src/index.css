@@ -103,7 +103,14 @@ button:disabled {
 .link {
   color: var(--verde);
   text-decoration: underline;
-  padding: 0.4rem 0;
+  padding: 0.4rem 0.1rem;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+
+button.link {
+  align-self: flex-start;
 }
 
 .perigo {
@@ -790,4 +797,241 @@ dl dd {
   border-left: 4px solid var(--dourado);
   background: #fff8e6;
   border-radius: 8px;
+}
+
+/* ---------- Revisão de usabilidade ---------- */
+
+.avisos {
+  position: fixed;
+  z-index: 2000;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--altura-menu) + env(safe-area-inset-bottom) + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.aviso-flutuante {
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background: var(--texto);
+  color: #fff;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+  animation: surgir 0.2s ease-out;
+}
+
+.aviso-flutuante.erro {
+  background: var(--perigo);
+}
+
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.campo-senha {
+  position: relative;
+  display: block;
+}
+
+.campo-senha input {
+  padding-right: 6rem !important;
+}
+
+.mostrar-senha {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.5rem 0.7rem;
+  color: var(--verde);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.dica {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--sutil);
+}
+
+.sugestao-email {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: #fff6db;
+  color: var(--texto);
+}
+
+.seletor-folha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.seletor-opcoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.seletor-opcoes li + li {
+  border-top: 1px solid var(--borda);
+}
+
+.seletor-opcoes button {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  color: inherit;
+}
+
+.seletor-opcoes em {
+  color: var(--sutil);
+  font-size: 0.85rem;
+}
+
+.seletor-vazio {
+  padding: 0.7rem 0.8rem;
+}
+
+.folha-escolhida {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border: 2px solid var(--verde);
+  border-radius: 10px;
+  background: var(--verde-claro);
+}
+
+.mapa-vazio-aviso {
+  position: absolute;
+  z-index: 500;
+  top: 70px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.15);
+}
+
+.botao-localizar {
+  position: absolute;
+  z-index: 500;
+  right: 12px;
+  bottom: 70px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 1.3rem;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.2);
+}
+
+.legenda i.pendente {
+  border: 2px dashed var(--verde);
+  background: transparent;
+}
+
+.popup-titulo {
+  font-size: 1.05rem;
+}
+
+.popup-acoes .botao {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.icone-com-selo {
+  position: relative;
+}
+
+.selo {
+  position: absolute;
+  top: -6px;
+  right: -12px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--perigo);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.tudo-em-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border-color: var(--verde);
+  background: var(--verde-claro);
+}
+
+.texto-esquerda {
+  text-align: left;
+  width: 100%;
+}
+
+.aviso-pequeno {
+  font-size: 0.85rem;
+  color: #7a5600;
+  background: #fff6db;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.lista-parecidas {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.lista-parecidas li {
+  margin: 0.3rem 0;
+}
+
+select:disabled,
+input:disabled {
+  opacity: 0.6;
+}
+
+.tela-central button.link {
+  align-self: center;
+}
+
+.lema {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  margin: 0 0 0.5rem !important;
+}
+
+.lema-yoruba {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.2rem;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--verde);
+}
+
+.lema-traducao {
+  font-size: 0.85rem;
+  color: var(--sutil);
 }

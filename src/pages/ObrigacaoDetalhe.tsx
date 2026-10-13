@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import SeletorFolha from '../components/SeletorFolha'
+import { avisar } from '../lib/avisos'
 import { distanciaEmMetros, formatarDistancia, linkComoChegar } from '../lib/distancia'
 import { ehValidador, useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
@@ -15,7 +17,7 @@ export default function ObrigacaoDetalhe() {
   const [obrigacao, setObrigacao] = useState<Obrigacao | null>(null)
   const [itens, setItens] = useState<ItemObrigacao[]>([])
   const [pontos, setPontos] = useState<PontoSimples[]>([])
-  const [folhas, setFolhas] = useState<Pick<Folha, 'id' | 'nome_popular'>[]>([])
+  const [folhas, setFolhas] = useState<Pick<Folha, 'id' | 'nome_popular' | 'status' | 'nome_cientifico' | 'outros_nomes'>[]>([])
   const [eu, setEu] = useState<[number, number] | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -35,7 +37,7 @@ export default function ObrigacaoDetalhe() {
     Promise.all([
       supabase.from('obrigacoes').select('*').eq('id', id).maybeSingle(),
       supabase.from('pontos').select('id, folha_id, lat, lng').eq('status', 'validado'),
-      supabase.from('folhas').select('id, nome_popular').eq('status', 'validada').order('nome_popular'),
+      supabase.from('folhas').select('id, nome_popular, status, nome_cientifico, outros_nomes').neq('status', 'recusada').order('nome_popular'),
       carregarItens(),
     ]).then(([o, p, f]) => {
       setObrigacao(o.data as Obrigacao | null)
@@ -173,7 +175,7 @@ export default function ObrigacaoDetalhe() {
 
 function AdicionarFolha({ obrigacaoId, folhas, aoAdicionar }: {
   obrigacaoId: string
-  folhas: Pick<Folha, 'id' | 'nome_popular'>[]
+  folhas: Pick<Folha, 'id' | 'nome_popular' | 'status' | 'nome_cientifico' | 'outros_nomes'>[]
   aoAdicionar: () => Promise<void>
 }) {
   const [folhaId, setFolhaId] = useState('')
@@ -182,6 +184,8 @@ function AdicionarFolha({ obrigacaoId, folhas, aoAdicionar }: {
 
   async function adicionar(e: FormEvent) {
     e.preventDefault()
+    if (!folhaId) return setErro('Escolha a folha digitando o nome dela.')
+    const nome = folhas.find((f) => f.id === folhaId)?.nome_popular
     const { error } = await supabase
       .from('obrigacao_itens')
       .insert({ obrigacao_id: obrigacaoId, folha_id: folhaId, quantidade: quantidade.trim() || null })
@@ -189,22 +193,18 @@ function AdicionarFolha({ obrigacaoId, folhas, aoAdicionar }: {
     setFolhaId('')
     setQuantidade('')
     setErro('')
+    avisar(`${nome ?? 'Folha'} adicionada à lista.`)
     await aoAdicionar()
   }
 
   return (
     <form className="cartao formulario" onSubmit={adicionar}>
       <h2>Adicionar folha</h2>
-      <select value={folhaId} onChange={(e) => setFolhaId(e.target.value)} required>
-        <option value="">Escolha a folha…</option>
-        {folhas.map((f) => (
-          <option key={f.id} value={f.id}>{f.nome_popular}</option>
-        ))}
-      </select>
+      <SeletorFolha folhas={folhas} valor={folhaId} aoMudar={setFolhaId} linkNova={false} />
       <input value={quantidade} onChange={(e) => setQuantidade(e.target.value)} placeholder="Quantidade (ex.: 1 maço, 7 folhas)"
         maxLength={40} />
       {erro && <p className="erro">{erro}</p>}
-      <button className="primario">Adicionar</button>
+      <button className="primario" disabled={!folhaId}>Adicionar à lista</button>
       <Link to="/folhas/nova" className="link">A folha não está na lista? Cadastrar</Link>
     </form>
   )

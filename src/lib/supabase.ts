@@ -34,6 +34,10 @@ export function mensagemDeErro(erro: unknown): string {
   if (msg.includes('unico_zelador'))
     return 'Você é o único zelador da casa. Passe o cargo para outra pessoa (aba Validar) antes de excluir a conta.'
   if (msg.includes('Password should be at least')) return 'A senha precisa ter pelo menos 6 caracteres.'
+  if (msg.includes('should be different from the old password')) return 'A nova senha precisa ser diferente da atual.'
+  if (msg.includes('is invalid') && msg.toLowerCase().includes('email')) return 'Este e-mail parece estar errado. Confira o que digitou.'
+  if (msg.includes('JWT expired') || msg.includes('refresh_token')) return 'Sua sessão expirou. Saia e entre de novo.'
+  if (msg.includes('Load failed') || msg.includes('NetworkError')) return 'Sem conexão com a internet. Tente de novo quando tiver sinal.'
   if (msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.'
   if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde alguns minutos.'
   if (msg.includes('Failed to fetch')) return 'Sem conexão com a internet.'

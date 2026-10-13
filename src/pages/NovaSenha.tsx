@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react'
+import CampoSenha from '../components/CampoSenha'
+import { avisar } from '../lib/avisos'
 import { useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
 
@@ -14,18 +16,17 @@ export default function NovaSenha() {
     const { error } = await supabase.auth.updateUser({ password: senha })
     setEnviando(false)
     if (error) setErro(mensagemDeErro(error))
-    else fimRecuperacao()
+    else {
+      avisar('Senha alterada!')
+      fimRecuperacao()
+    }
   }
 
   return (
     <main className="tela-central">
       <h1>Nova senha</h1>
       <form onSubmit={salvar} className="formulario">
-        <label>
-          Digite a nova senha
-          <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required minLength={6}
-            autoComplete="new-password" />
-        </label>
+        <CampoSenha valor={senha} aoMudar={setSenha} novaSenha rotulo="Digite a nova senha" />
         {erro && <p className="erro">{erro}</p>}
         <button className="primario" disabled={enviando}>Salvar</button>
       </form>

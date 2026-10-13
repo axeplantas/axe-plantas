@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import CampoSenha from '../components/CampoSenha'
 import { mensagemDeErro, modoDemo, supabase, VERSAO_TERMOS } from '../lib/supabase'
+import { sugerirEmail } from '../lib/texto'
 
 type Modo = 'entrar' | 'cadastrar' | 'esqueci'
 
@@ -25,7 +27,7 @@ export default function Entrar() {
   const [infoConvite, setInfoConvite] = useState<InfoConvite | null>(null)
   const [conviteInvalido, setConviteInvalido] = useState(false)
   const [modo, setModo] = useState<Modo>(convite ? 'cadastrar' : 'entrar')
-  const [email, setEmail] = useState('')
+  const [emailDigitado, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [apelido, setApelido] = useState('')
   const [aceite, setAceite] = useState(false)
@@ -47,8 +49,11 @@ export default function Entrar() {
     })
   }, [convite])
 
+  const sugestaoEmail = sugerirEmail(emailDigitado)
+
   async function enviar(e: FormEvent) {
     e.preventDefault()
+    const email = emailDigitado.trim().toLowerCase()
     setErro('')
     setAviso('')
     setEnviando(true)
@@ -72,10 +77,15 @@ export default function Entrar() {
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: enderecoDoApp })
         if (error) throw error
-        setAviso('Se o e-mail estiver cadastrado, você vai receber um link para criar uma nova senha.')
+        setAviso(
+          'Se o e-mail estiver cadastrado, você vai receber um link para criar uma nova senha. Abra o link neste mesmo celular. Confira também a caixa de spam.',
+        )
       }
     } catch (err) {
-      setErro(mensagemDeErro(err))
+      const mensagem = mensagemDeErro(err)
+      setErro(modo === 'entrar' && mensagem.includes('incorretos')
+        ? 'E-mail ou senha incorretos. Confira o que digitou (toque em “Mostrar”) ou use “Esqueci minha senha”.'
+        : mensagem)
     } finally {
       setEnviando(false)
     }
@@ -84,7 +94,10 @@ export default function Entrar() {
   return (
     <main className="tela-central">
       <img src="logo-vertical.svg" alt="Axé Plantas" className="logo" />
-      <p className="sutil">Kosi ewe, kosi Orisa</p>
+      <p className="lema">
+        <span className="lema-yoruba">Kosi ewe, kosi Orisa</span>
+        <span className="lema-traducao">Sem folha, não há Orixá</span>
+      </p>
       {modoDemo && (
         <p className="aviso">
           <strong>Modo demonstração.</strong> Digite qualquer e-mail e senha (mín. 6 letras). Nada é salvo.
@@ -119,15 +132,15 @@ export default function Entrar() {
         )}
         <label>
           E-mail
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+          <input type="email" value={emailDigitado} onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
+            autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" />
         </label>
-        {modo !== 'esqueci' && (
-          <label>
-            Senha
-            <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required minLength={6}
-              autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'} />
-          </label>
+        {sugestaoEmail && (
+          <button type="button" className="sugestao-email" onClick={() => setEmail(sugestaoEmail)}>
+            Você quis dizer <strong>{sugestaoEmail}</strong>? Toque para corrigir.
+          </button>
         )}
+        {modo !== 'esqueci' && <CampoSenha valor={senha} aoMudar={setSenha} novaSenha={modo === 'cadastrar'} />}
 
         {modo === 'cadastrar' && (
           <label className="opcao aceite">

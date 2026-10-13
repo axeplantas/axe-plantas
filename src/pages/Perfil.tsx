@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ehAdmin, useSessao } from '../lib/sessao'
+import CampoSenha from '../components/CampoSenha'
 import { VERSAO } from '../lib/atualizacao'
+import { avisar } from '../lib/avisos'
 import { BUCKET_FOTOS, mensagemDeErro, supabase } from '../lib/supabase'
 import { ROTULO_PAPEL } from '../lib/tipos'
 
@@ -13,8 +15,12 @@ export default function Perfil() {
   async function salvar(e: FormEvent) {
     e.preventDefault()
     const { error } = await supabase.from('perfis').update({ apelido: apelido.trim() }).eq('id', perfil!.id)
-    setMensagem(error ? mensagemDeErro(error) : 'Salvo!')
-    if (!error) recarregarPerfil()
+    if (error) setMensagem(mensagemDeErro(error))
+    else {
+      setMensagem('')
+      avisar('Nome atualizado.')
+      recarregarPerfil()
+    }
   }
 
   return (
@@ -38,6 +44,8 @@ export default function Perfil() {
         {mensagem && <p className="aviso">{mensagem}</p>}
         <button className="primario">Salvar</button>
       </form>
+
+      <TrocarSenha />
 
       <section className="cartao">
         <h2>Instalar no celular</h2>
@@ -69,6 +77,38 @@ export default function Perfil() {
 
       <p className="versao">Versão de {VERSAO}</p>
     </div>
+  )
+}
+
+function TrocarSenha() {
+  const [aberto, setAberto] = useState(false)
+  const [senha, setSenha] = useState('')
+  const [erro, setErro] = useState('')
+  const [salvando, setSalvando] = useState(false)
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault()
+    setSalvando(true)
+    const { error } = await supabase.auth.updateUser({ password: senha })
+    setSalvando(false)
+    if (error) return setErro(mensagemDeErro(error))
+    avisar('Senha alterada!')
+    setSenha('')
+    setAberto(false)
+  }
+
+  if (!aberto) return <button className="link" onClick={() => setAberto(true)}>Trocar minha senha</button>
+
+  return (
+    <form className="cartao formulario" onSubmit={salvar}>
+      <h2>Trocar senha</h2>
+      <CampoSenha valor={senha} aoMudar={setSenha} novaSenha rotulo="Nova senha" />
+      {erro && <p className="erro">{erro}</p>}
+      <div className="linha">
+        <button className="primario" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar nova senha'}</button>
+        <button type="button" className="link" onClick={() => setAberto(false)}>Cancelar</button>
+      </div>
+    </form>
   )
 }
 

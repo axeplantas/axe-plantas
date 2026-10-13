@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import CompartilharLink from '../components/CompartilharLink'
+import { avisar } from '../lib/avisos'
 import Convites from '../components/Convites'
 import { useSessao } from '../lib/sessao'
 import { linkDoConvite, mensagemDeErro, supabase } from '../lib/supabase'
@@ -31,6 +32,7 @@ export default function Admin() {
     setErro('')
     const { error } = await acao
     if (error) setErro(mensagemDeErro(error))
+    else avisar('Pronto!')
     await carregar()
   }
 

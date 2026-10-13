@@ -1,10 +1,12 @@
 import type { LatLngExpression } from 'leaflet'
 import { useEffect, useState, type FormEvent } from 'react'
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import IdentificarFolha, { type FolhaResumo } from '../components/IdentificarFolha'
+import SeletorFolha from '../components/SeletorFolha'
+import { avisar } from '../lib/avisos'
 import { prepararFoto } from '../lib/imagem'
-import { useSessao } from '../lib/sessao'
+import { ehValidador, useSessao } from '../lib/sessao'
 import { BUCKET_FOTOS, mensagemDeErro, supabase } from '../lib/supabase'
 import { ROTULO_VISIBILIDADE, type Visibilidade } from '../lib/tipos'
 
@@ -19,6 +21,7 @@ export default function NovoPonto() {
   const [posicao, setPosicao] = useState<[number, number] | null>(null)
   const [precisao, setPrecisao] = useState<number | null>(null)
   const [versaoGps, setVersaoGps] = useState(0)
+  const [zoom, setZoom] = useState(18)
   const [erroGps, setErroGps] = useState('')
   const [foto, setFoto] = useState<File | null>(null)
   const [previa, setPrevia] = useState<string | null>(null)
@@ -52,6 +55,7 @@ export default function NovoPonto() {
         setPosicao([pos.coords.latitude, pos.coords.longitude])
         setPrecisao(Math.round(pos.coords.accuracy))
         setVersaoGps((v) => v + 1)
+        setZoom(18)
       },
       () => setErroGps('Não foi possível pegar a localização. Permita o acesso ao GPS ou arraste o mapa até o local.'),
       { enableHighAccuracy: true, timeout: 20000 },
@@ -61,8 +65,9 @@ export default function NovoPonto() {
   async function salvar(e: FormEvent) {
     e.preventDefault()
     if (!perfil) return
-    if (!posicao) return setErro('Defina o local no mapa.')
-    if (!folhaId) return setErro('Escolha qual é a folha.')
+    if (!folhaId) return setErro('Falta escolher qual é a folha (passo 2).')
+    if (!posicao) return setErro('Falta marcar onde está a folha (passo 3).')
+    if (zoom < 15) return setErro('Aproxime o mapa (passo 3) até a mira ficar exatamente em cima da planta.')
     setErro('')
     setSalvando(true)
 
@@ -85,6 +90,11 @@ export default function NovoPonto() {
         terreiro_id: perfil.terreiro_id,
       })
       if (error) throw error
+      avisar(
+        visibilidade === 'privado' || ehValidador(perfil)
+          ? 'Ponto salvo no mapa!'
+          : 'Ponto enviado! Ele aparece para todos depois que um validador da sua casa aprovar.',
+      )
       navegar(`/?folha=${folhaId}`)
     } catch (err) {
       if (caminhoFoto) await supabase.storage.from(BUCKET_FOTOS).remove([caminhoFoto])
@@ -116,19 +126,10 @@ export default function NovoPonto() {
 
       <section>
         <h2>2. Qual folha?</h2>
-        <select value={folhaId} onChange={(e) => { setFolhaId(e.target.value); setFolhaNova(false) }} required>
-          <option value="">Escolha…</option>
-          {folhas.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.nome_popular}
-              {f.status === 'pendente' ? ' (em validação)' : ''}
-            </option>
-          ))}
-        </select>
+        <SeletorFolha folhas={folhas} valor={folhaId} aoMudar={(id) => { setFolhaId(id); setFolhaNova(false) }} />
         {folhaNova && (
           <p className="aviso">Folha nova cadastrada a partir da foto. O validador da sua casa vai conferir o nome.</p>
         )}
-        <Link to="/folhas/nova" className="link">Não achou? Cadastrar uma folha nova</Link>
       </section>
 
       <section>
@@ -143,7 +144,7 @@ export default function NovoPonto() {
                 url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
                 maxZoom={19}
               />
-              <SeguirCentro aoMudar={setPosicao} />
+              <SeguirCentro aoMudar={(p, z) => { setPosicao(p); setZoom(z) }} />
             </MapContainer>
           ) : (
             <div className="mapa mapa-vazio">{erroGps || 'Procurando sua localização…'}</div>
@@ -151,10 +152,14 @@ export default function NovoPonto() {
           {posicao && <div className="mira" aria-hidden>✛</div>}
         </div>
         <div className="linha">
-          {precisao !== null && <span className="sutil">Precisão do GPS: ~{precisao} m</span>}
+          {precisao !== null && (
+            <span className={precisao > 50 ? 'aviso-pequeno' : 'sutil'}>
+              {precisao > 50 ? `GPS impreciso (~${precisao} m): arraste o mapa até o lugar exato.` : `Precisão do GPS: ~${precisao} m`}
+            </span>
+          )}
           <button type="button" className="link" onClick={pegarLocalizacao}>Usar minha posição</button>
           {!posicao && erroGps && (
-            <button type="button" className="link" onClick={() => setPosicao([-14.235, -51.925])}>
+            <button type="button" className="link" onClick={() => { setPosicao([-14.235, -51.925]); setZoom(4) }}>
               Escolher no mapa
             </button>
           )}
@@ -174,7 +179,10 @@ export default function NovoPonto() {
         <p className="sutil">
           {visibilidade === 'privado'
             ? 'Só você vê este ponto. Bom para quintais e lugares particulares.'
-            : 'O ponto aparece depois que um validador do seu terreiro aprovar.'}
+            : visibilidade === 'rede'
+              ? 'Todos os terreiros vão ver. Não marque casas, quintais ou terreiros: para isso, use “Só eu”.'
+              : 'Só os membros da sua casa vão ver.'}
+          {visibilidade !== 'privado' && !ehValidador(perfil) && ' Aparece depois que um validador aprovar.'}
         </p>
       </section>
 
@@ -190,11 +198,11 @@ export default function NovoPonto() {
   )
 }
 
-function SeguirCentro({ aoMudar }: { aoMudar: (p: [number, number]) => void }) {
+function SeguirCentro({ aoMudar }: { aoMudar: (p: [number, number], zoom: number) => void }) {
   const mapa = useMapEvents({
     moveend: () => {
       const c = mapa.getCenter()
-      aoMudar([c.lat, c.lng])
+      aoMudar([c.lat, c.lng], mapa.getZoom())
     },
   })
   return null

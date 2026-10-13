@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ehValidador, useSessao } from '../lib/sessao'
+import { avisar } from '../lib/avisos'
+import { ehAdmin, ehValidador, useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
 import type { Folha, Fundamento } from '../lib/tipos'
 
@@ -13,6 +14,7 @@ export default function FolhaDetalhe() {
   const [qtdPontos, setQtdPontos] = useState(0)
   const [carregando, setCarregando] = useState(true)
   const [editando, setEditando] = useState(false)
+  const [editandoFolha, setEditandoFolha] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -32,12 +34,20 @@ export default function FolhaDetalhe() {
   if (!folha) return <div className="pagina"><p>Folha não encontrada.</p><Link to="/folhas">Voltar</Link></div>
 
   const podeEditar = ehValidador(perfil)
+  const podeEditarFolha = ehAdmin(perfil) || (ehValidador(perfil) && folha.terreiro_id === perfil?.terreiro_id)
   const temFundamento = fundamento && (fundamento.orixas || fundamento.usos || fundamento.observacoes)
 
   return (
     <div className="pagina">
       <button className="link" onClick={() => navegar(-1)}>← Voltar</button>
-      <h1>{folha.nome_popular}</h1>
+      {editandoFolha ? (
+        <EditarFolha folha={folha} aoSalvar={(f) => { setFolha(f); setEditandoFolha(false) }} aoCancelar={() => setEditandoFolha(false)} />
+      ) : (
+        <div className="cabecalho">
+          <h1>{folha.nome_popular}</h1>
+          {podeEditarFolha && <button className="link" onClick={() => setEditandoFolha(true)}>Editar</button>}
+        </div>
+      )}
       {folha.nome_ritual && <p className="destaque">{folha.nome_ritual}</p>}
       {folha.nome_cientifico && <p className="cientifico">{folha.nome_cientifico}</p>}
       {folha.outros_nomes && <p className="sutil">Também chamada: {folha.outros_nomes}</p>}
@@ -84,6 +94,68 @@ export default function FolhaDetalhe() {
   )
 }
 
+function EditarFolha({ folha, aoSalvar, aoCancelar }: {
+  folha: Folha
+  aoSalvar: (f: Folha) => void
+  aoCancelar: () => void
+}) {
+  const [campos, setCampos] = useState({
+    nome_popular: folha.nome_popular,
+    nome_ritual: folha.nome_ritual ?? '',
+    outros_nomes: folha.outros_nomes ?? '',
+    nome_cientifico: folha.nome_cientifico ?? '',
+    alerta: folha.alerta ?? '',
+  })
+  const [toxica, setToxica] = useState(folha.toxica)
+  const [erro, setErro] = useState('')
+  const mudar = (campo: keyof typeof campos) => (e: { target: { value: string } }) =>
+    setCampos((c) => ({ ...c, [campo]: e.target.value }))
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault()
+    const limpo = Object.fromEntries(Object.entries(campos).map(([k, v]) => [k, v.trim() || null]))
+    const { data, error } = await supabase.from('folhas').update({ ...limpo, toxica }).eq('id', folha.id).select().single()
+    if (error) return setErro(mensagemDeErro(error))
+    avisar('Folha atualizada.')
+    aoSalvar(data as Folha)
+  }
+
+  return (
+    <form className="cartao formulario" onSubmit={salvar}>
+      <h2>Editar folha</h2>
+      <label>
+        Nome popular *
+        <input value={campos.nome_popular} onChange={mudar('nome_popular')} required maxLength={60} />
+      </label>
+      <label>
+        Nome no Axé
+        <input value={campos.nome_ritual} onChange={mudar('nome_ritual')} maxLength={60} />
+      </label>
+      <label>
+        Outros nomes (separe por vírgula)
+        <input value={campos.outros_nomes} onChange={mudar('outros_nomes')} maxLength={120} />
+      </label>
+      <label>
+        Nome científico
+        <input value={campos.nome_cientifico} onChange={mudar('nome_cientifico')} maxLength={80} autoCapitalize="none" />
+      </label>
+      <label className="opcao">
+        <input type="checkbox" checked={toxica} onChange={(e) => setToxica(e.target.checked)} />
+        Tóxica ou pede cuidado
+      </label>
+      <label>
+        Cuidados / não confundir com…
+        <textarea value={campos.alerta} onChange={mudar('alerta')} rows={2} maxLength={300} />
+      </label>
+      {erro && <p className="erro">{erro}</p>}
+      <div className="linha">
+        <button className="primario">Salvar</button>
+        <button type="button" className="link" onClick={aoCancelar}>Cancelar</button>
+      </div>
+    </form>
+  )
+}
+
 function EditarFundamento({ folhaId, atual, aoSalvar, aoCancelar }: {
   folhaId: string
   atual: Fundamento | null
@@ -110,6 +182,7 @@ function EditarFundamento({ folhaId, atual, aoSalvar, aoCancelar }: {
       .select()
       .single()
     if (error) return setErro(mensagemDeErro(error))
+    avisar('Fundamento salvo. Só a sua casa vê.')
     aoSalvar(data as Fundamento)
   }
 

@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Convites from '../components/Convites'
 import Foto from '../components/Foto'
+import { avisar } from '../lib/avisos'
+import { linkComoChegar } from '../lib/distancia'
 import { useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
 import { ROTULO_PAPEL, ROTULO_VISIBILIDADE, type Folha, type Papel, type Perfil, type Ponto } from '../lib/tipos'
+
+const EXPLICA_PAPEL: Record<Papel, string> = {
+  membro: 'marca folhas e pontos',
+  validador: 'também aprova folhas e pontos da casa',
+  zelador: 'também aprova e remove membros e escolhe validadores',
+}
 
 export default function Painel() {
   const { perfil } = useSessao()
@@ -11,10 +20,11 @@ export default function Painel() {
   const [membros, setMembros] = useState<Perfil[]>([])
   const [folhas, setFolhas] = useState<Folha[]>([])
   const [pontos, setPontos] = useState<Ponto[]>([])
-  const [erro, setErro] = useState('')
+  const [carregado, setCarregado] = useState(false)
+  const [ocupado, setOcupado] = useState<string | null>(null)
 
   const carregar = useCallback(async () => {
-    if (!perfil) return
+    if (!perfil?.terreiro_id) return
     const [f, p, m] = await Promise.all([
       supabase.from('folhas').select('*').eq('status', 'pendente').eq('terreiro_id', perfil.terreiro_id).order('created_at'),
       supabase
@@ -31,51 +41,62 @@ export default function Painel() {
     setFolhas((f.data ?? []) as Folha[])
     setPontos((p.data ?? []) as Ponto[])
     setMembros((m.data ?? []) as Perfil[])
+    setCarregado(true)
   }, [perfil, souZelador])
 
   useEffect(() => {
     carregar()
   }, [carregar])
 
-  async function executar(acao: PromiseLike<{ error: unknown }>) {
-    setErro('')
+  async function executar(id: string, acao: PromiseLike<{ error: unknown }>, sucesso: string) {
+    setOcupado(id)
     const { error } = await acao
-    if (error) setErro(mensagemDeErro(error))
+    setOcupado(null)
+    if (error) avisar(mensagemDeErro(error), 'erro')
+    else avisar(sucesso)
     await carregar()
+  }
+
+  function mudarPapel(m: Perfil, papel: Papel) {
+    if (papel === 'zelador' && !confirm(`Tornar ${m.apelido} zelador(a)? Zeladores podem aprovar e remover membros da casa.`)) {
+      return carregar()
+    }
+    executar(m.id, supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: papel }),
+      `${m.apelido} agora é ${ROTULO_PAPEL[papel].toLowerCase()}.`)
   }
 
   const pendentes = membros.filter((m) => !m.aprovado)
   const aprovados = membros.filter((m) => m.aprovado)
+  const nadaPendente = carregado && pendentes.length === 0 && folhas.length === 0 && pontos.length === 0
 
   return (
     <div className="pagina">
       <h1>Validar</h1>
-      {erro && <p className="erro">{erro}</p>}
-
-      {souZelador && perfil?.terreiro_id && (
-        <section className="cartao">
-          <Convites terreiroId={perfil.terreiro_id} tipo="membro"
-            titulo="👥 Convidar filhos da casa"
-            explicacao="Envie o link pelo WhatsApp. Quem entrar por ele aparece aqui embaixo para você aprovar. O link vale por 30 dias e pode ser usado por várias pessoas." />
-        </section>
+      {!carregado && <p className="sutil">Carregando…</p>}
+      {nadaPendente && (
+        <div className="cartao tudo-em-dia">
+          <strong>✔ Tudo em dia!</strong>
+          <span className="sutil">Nenhum pedido, folha ou ponto esperando você.</span>
+        </div>
       )}
 
-      {souZelador && (
+      {souZelador && pendentes.length > 0 && (
         <section>
           <h2>Pedidos de entrada ({pendentes.length})</h2>
-          {pendentes.length === 0 && <p className="sutil">Nenhum pedido.</p>}
+          <p className="sutil">Só aprove quem você conhece e é da casa.</p>
           {pendentes.map((m) => (
             <div key={m.id} className="cartao">
               <strong>{m.apelido}</strong>
               <div className="sutil">Pediu em {new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
               <div className="linha">
-                <button className="primario"
-                  onClick={() => executar(supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: 'membro' }))}>
+                <button className="primario" disabled={ocupado === m.id}
+                  onClick={() => executar(m.id, supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: 'membro' }),
+                    `${m.apelido} foi aprovado(a).`)}>
                   Aprovar
                 </button>
-                <button className="link perigo"
-                  onClick={() => confirm(`Recusar e apagar o cadastro de ${m.apelido}?`) &&
-                    executar(supabase.rpc('remover_membro', { p_usuario: m.id }))}>
+                <button className="link perigo" disabled={ocupado === m.id}
+                  onClick={() => confirm(`Recusar o pedido de ${m.apelido}? O cadastro será apagado.`) &&
+                    executar(m.id, supabase.rpc('remover_membro', { p_usuario: m.id }), 'Pedido recusado.')}>
                   Recusar
                 </button>
               </div>
@@ -84,72 +105,89 @@ export default function Painel() {
         </section>
       )}
 
-      <section>
-        <h2>Folhas para validar ({folhas.length})</h2>
-        {folhas.length === 0 && <p className="sutil">Nada pendente.</p>}
-        {folhas.map((f) => (
-          <div key={f.id} className="cartao">
-            <strong>{f.nome_popular}</strong>
-            {f.nome_ritual && <span className="sutil"> · {f.nome_ritual}</span>}
-            {f.nome_cientifico && <div className="cientifico">{f.nome_cientifico}</div>}
-            {f.outros_nomes && <div className="sutil">Outros nomes: {f.outros_nomes}</div>}
-            {(f.toxica || f.alerta) && <div className="alerta-toxica">{f.toxica ? '⚠️ Tóxica. ' : ''}{f.alerta}</div>}
-            <div className="linha">
-              <button className="primario" onClick={() => executar(supabase.from('folhas').update({ status: 'validada' }).eq('id', f.id))}>
-                Validar
-              </button>
-              <button className="link perigo" onClick={() => executar(supabase.from('folhas').update({ status: 'recusada' }).eq('id', f.id))}>
-                Recusar
-              </button>
+      {folhas.length > 0 && (
+        <section>
+          <h2>Folhas novas para conferir ({folhas.length})</h2>
+          <p className="sutil">Confira se o nome está certo. Se precisar corrigir, abra a folha e toque em “Editar”.</p>
+          {folhas.map((f) => (
+            <div key={f.id} className="cartao">
+              <Link to={`/folhas/${f.id}`}><strong>{f.nome_popular}</strong></Link>
+              {f.nome_ritual && <span className="sutil"> · {f.nome_ritual}</span>}
+              {f.nome_cientifico && <div className="cientifico">{f.nome_cientifico}</div>}
+              {f.outros_nomes && <div className="sutil">Outros nomes: {f.outros_nomes}</div>}
+              {(f.toxica || f.alerta) && <div className="alerta-toxica">{f.toxica ? '⚠️ Tóxica. ' : ''}{f.alerta}</div>}
+              <div className="linha">
+                <button className="primario" disabled={ocupado === f.id}
+                  onClick={() => executar(f.id, supabase.from('folhas').update({ status: 'validada' }).eq('id', f.id),
+                    `${f.nome_popular} validada.`)}>
+                  Validar
+                </button>
+                <button className="link perigo" disabled={ocupado === f.id}
+                  onClick={() => confirm(`Recusar a folha “${f.nome_popular}”? Ela some da lista de folhas.`) &&
+                    executar(f.id, supabase.from('folhas').update({ status: 'recusada' }).eq('id', f.id), 'Folha recusada.')}>
+                  Recusar
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </section>
+          ))}
+        </section>
+      )}
 
-      <section>
-        <h2>Pontos para validar ({pontos.length})</h2>
-        {pontos.length === 0 && <p className="sutil">Nada pendente.</p>}
-        {pontos.map((p) => (
-          <div key={p.id} className="cartao">
-            <strong>{p.folhas?.nome_popular ?? 'Folha em validação'}</strong>
-            <div className="sutil">{ROTULO_VISIBILIDADE[p.visibilidade]}</div>
-            {p.foto_path && <Foto caminho={p.foto_path} alt={p.folhas?.nome_popular ?? 'Foto'} />}
-            {p.observacao && <p>{p.observacao}</p>}
-            <a href={`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=18/${p.lat}/${p.lng}`} target="_blank" rel="noreferrer">
-              Ver local
-            </a>
-            <div className="linha">
-              <button className="primario" onClick={() => executar(supabase.from('pontos').update({ status: 'validado' }).eq('id', p.id))}>
-                Validar
-              </button>
-              <button className="link perigo" onClick={() => executar(supabase.from('pontos').update({ status: 'recusado' }).eq('id', p.id))}>
-                Recusar
-              </button>
+      {pontos.length > 0 && (
+        <section>
+          <h2>Pontos para conferir ({pontos.length})</h2>
+          <p className="sutil">Confira a foto e o local. Recuse se for casa, terreiro ou lugar particular marcado como público.</p>
+          {pontos.map((p) => (
+            <div key={p.id} className="cartao">
+              <strong>{p.folhas?.nome_popular ?? 'Folha em validação'}</strong>
+              <div className="sutil">Visível para: {ROTULO_VISIBILIDADE[p.visibilidade]}</div>
+              {p.foto_path && <Foto caminho={p.foto_path} alt={p.folhas?.nome_popular ?? 'Foto'} />}
+              {p.observacao && <p>{p.observacao}</p>}
+              <a href={linkComoChegar(p.lat, p.lng)} target="_blank" rel="noreferrer">Ver o local no mapa</a>
+              <div className="linha">
+                <button className="primario" disabled={ocupado === p.id}
+                  onClick={() => executar(p.id, supabase.from('pontos').update({ status: 'validado' }).eq('id', p.id), 'Ponto validado.')}>
+                  Validar
+                </button>
+                <button className="link perigo" disabled={ocupado === p.id}
+                  onClick={() => confirm('Recusar este ponto? Ele sai do mapa.') &&
+                    executar(p.id, supabase.from('pontos').update({ status: 'recusado' }).eq('id', p.id), 'Ponto recusado.')}>
+                  Recusar
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </section>
+          ))}
+        </section>
+      )}
+
+      {souZelador && perfil?.terreiro_id && (
+        <section className="cartao">
+          <Convites terreiroId={perfil.terreiro_id} tipo="membro"
+            titulo="👥 Convidar filhos da casa"
+            explicacao="Envie este link no grupo da casa. Várias pessoas podem usar; os pedidos aparecem no topo desta tela para você aprovar. Vale por 30 dias." />
+        </section>
+      )}
 
       {souZelador && (
         <section>
           <h2>Membros da casa ({aprovados.length})</h2>
-          <p className="sutil">Validadores podem aprovar folhas e pontos. Zeladores também aprovam membros.</p>
+          <p className="sutil">
+            <strong>Membro</strong> {EXPLICA_PAPEL.membro}; <strong>validador</strong> {EXPLICA_PAPEL.validador};{' '}
+            <strong>zelador</strong> {EXPLICA_PAPEL.zelador}.
+          </p>
+          {aprovados.length === 0 && <p className="sutil">Ninguém além de você ainda. Envie o link de convite acima.</p>}
           {aprovados.map((m) => (
             <div key={m.id} className="cartao linha">
               <strong className="cresce">{m.apelido}</strong>
-              <select
-                value={m.papel}
-                onChange={(e) =>
-                  executar(supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: e.target.value as Papel }))
-                }
-              >
+              <select value={m.papel} disabled={ocupado === m.id} aria-label={`Papel de ${m.apelido}`}
+                onChange={(e) => mudarPapel(m, e.target.value as Papel)}>
                 {(Object.keys(ROTULO_PAPEL) as Papel[]).map((papel) => (
                   <option key={papel} value={papel}>{ROTULO_PAPEL[papel]}</option>
                 ))}
               </select>
-              <button className="link perigo"
-                onClick={() => confirm(`Remover ${m.apelido} do aplicativo?`) &&
-                  executar(supabase.rpc('remover_membro', { p_usuario: m.id }))}>
+              <button className="link perigo" disabled={ocupado === m.id}
+                onClick={() => confirm(`Remover ${m.apelido} do aplicativo? A conta dela será apagada.`) &&
+                  executar(m.id, supabase.rpc('remover_membro', { p_usuario: m.id }), `${m.apelido} foi removido(a).`)}>
                 Remover
               </button>
             </div>
