@@ -4,6 +4,7 @@ import { ehValidador, useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import Avisos from './Avisos'
 import InstalarApp from './InstalarApp'
+import PontosGuardados from './PontosGuardados'
 
 /** Quantas coisas esperam o validador/zelador: pedidos de entrada, folhas e pontos. */
 function usePendencias(): number {
@@ -50,6 +51,7 @@ export default function Layout() {
   return (
     <div className="app">
       <main className="conteudo">
+        <PontosGuardados />
         <Outlet />
       </main>
       <InstalarApp />

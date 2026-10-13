@@ -2,20 +2,33 @@ import type { LatLngExpression } from 'leaflet'
 import { useEffect, useState, type FormEvent } from 'react'
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import FotosDaPlanta, { type FotoPlanta } from '../components/FotosDaPlanta'
 import IdentificarFolha, { type FolhaResumo } from '../components/IdentificarFolha'
 import SeletorFolha from '../components/SeletorFolha'
 import { avisar } from '../lib/avisos'
+import { ehErroDeRede, enviarPonto, guardarPonto } from '../lib/fila'
 import { prepararFoto } from '../lib/imagem'
 import { ehValidador, useSessao } from '../lib/sessao'
-import { BUCKET_FOTOS, mensagemDeErro, supabase } from '../lib/supabase'
+import { mensagemDeErro, supabase } from '../lib/supabase'
 import { ROTULO_VISIBILIDADE, type Visibilidade } from '../lib/tipos'
+
+const CHAVE_FOLHAS = 'axe-plantas:folhas'
+
+/** Lista de folhas guardada no celular, para marcar pontos mesmo sem internet. */
+function folhasGuardadas(): FolhaResumo[] {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_FOLHAS) ?? '[]') as FolhaResumo[]
+  } catch {
+    return []
+  }
+}
 
 export default function NovoPonto() {
   const { perfil } = useSessao()
   const navegar = useNavigate()
   const [params] = useSearchParams()
 
-  const [folhas, setFolhas] = useState<FolhaResumo[]>([])
+  const [folhas, setFolhas] = useState<FolhaResumo[]>(folhasGuardadas)
   const [folhaNova, setFolhaNova] = useState(false)
   const [folhaId, setFolhaId] = useState(params.get('folha') ?? '')
   const [posicao, setPosicao] = useState<[number, number] | null>(null)
@@ -23,8 +36,8 @@ export default function NovoPonto() {
   const [versaoGps, setVersaoGps] = useState(0)
   const [zoom, setZoom] = useState(18)
   const [erroGps, setErroGps] = useState('')
-  const [foto, setFoto] = useState<File | null>(null)
-  const [previa, setPrevia] = useState<string | null>(null)
+  const [fotos, setFotos] = useState<FotoPlanta[]>([])
+  const [semInternet, setSemInternet] = useState(!navigator.onLine)
   const [visibilidade, setVisibilidade] = useState<Visibilidade>('rede')
   const [observacao, setObservacao] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -36,16 +49,25 @@ export default function NovoPonto() {
       .select('id, nome_popular, nome_cientifico, outros_nomes, status')
       .neq('status', 'recusada')
       .order('nome_popular')
-      .then(({ data }) => setFolhas(data ?? []))
+      .then(({ data, error }) => {
+        if (error || !data) return
+        setFolhas(data)
+        try {
+          localStorage.setItem(CHAVE_FOLHAS, JSON.stringify(data))
+        } catch {
+          // Sem espaço: segue sem a cópia local.
+        }
+      })
     pegarLocalizacao()
-  }, [])
 
-  useEffect(() => {
-    if (!foto) return setPrevia(null)
-    const url = URL.createObjectURL(foto)
-    setPrevia(url)
-    return () => URL.revokeObjectURL(url)
-  }, [foto])
+    const mudou = () => setSemInternet(!navigator.onLine)
+    window.addEventListener('online', mudou)
+    window.addEventListener('offline', mudou)
+    return () => {
+      window.removeEventListener('online', mudou)
+      window.removeEventListener('offline', mudou)
+    }
+  }, [])
 
   function pegarLocalizacao() {
     setErroGps('')
@@ -62,34 +84,47 @@ export default function NovoPonto() {
     )
   }
 
-  async function salvar(e: FormEvent) {
+  function validar(): string | null {
+    if (!folhaId) return 'Falta escolher qual é a folha (passo 2).'
+    if (!posicao) return 'Falta marcar onde está a folha (passo 3).'
+    if (zoom < 15) return 'Aproxime o mapa (passo 3) até a mira ficar exatamente em cima da planta.'
+    return null
+  }
+
+  async function salvar(e: FormEvent, soGuardar = false) {
     e.preventDefault()
     if (!perfil) return
-    if (!folhaId) return setErro('Falta escolher qual é a folha (passo 2).')
-    if (!posicao) return setErro('Falta marcar onde está a folha (passo 3).')
-    if (zoom < 15) return setErro('Aproxime o mapa (passo 3) até a mira ficar exatamente em cima da planta.')
+    const problema = validar()
+    if (problema) return setErro(problema)
     setErro('')
     setSalvando(true)
 
-    let caminhoFoto: string | null = null
-    try {
-      if (foto) {
-        const imagem = await prepararFoto(foto)
-        caminhoFoto = `${perfil.id}/${crypto.randomUUID()}.jpg`
-        const envio = await supabase.storage.from(BUCKET_FOTOS).upload(caminhoFoto, imagem, { contentType: 'image/jpeg' })
-        if (envio.error) throw envio.error
-      }
+    const blobs = await Promise.all(fotos.map((f) => prepararFoto(f.arquivo)))
+    const ponto = {
+      folhaId,
+      lat: posicao![0],
+      lng: posicao![1],
+      observacao: observacao.trim() || null,
+      visibilidade,
+      fotos: blobs,
+    }
 
-      const { error } = await supabase.from('pontos').insert({
-        folha_id: folhaId,
-        lat: posicao[0],
-        lng: posicao[1],
-        foto_path: caminhoFoto,
-        observacao: observacao.trim() || null,
-        visibilidade,
-        terreiro_id: perfil.terreiro_id,
+    async function guardar(motivo: string) {
+      await guardarPonto({
+        ...ponto,
+        id: crypto.randomUUID(),
+        folhaNome: folhas.find((f) => f.id === folhaId)?.nome_popular ?? 'Folha',
+        criadoEm: new Date().toISOString(),
       })
-      if (error) throw error
+      avisar(motivo)
+      navegar('/')
+    }
+
+    try {
+      if (soGuardar || !navigator.onLine) {
+        return await guardar('Guardado no celular. Será enviado sozinho quando houver internet.')
+      }
+      await enviarPonto(ponto, perfil.id, perfil.terreiro_id)
       avisar(
         visibilidade === 'privado' || ehValidador(perfil)
           ? 'Ponto salvo no mapa!'
@@ -97,7 +132,9 @@ export default function NovoPonto() {
       )
       navegar(`/?folha=${folhaId}`)
     } catch (err) {
-      if (caminhoFoto) await supabase.storage.from(BUCKET_FOTOS).remove([caminhoFoto])
+      if (ehErroDeRede(err)) {
+        return await guardar('A internet caiu: guardei no celular e envio sozinho quando voltar.')
+      }
       setErro(mensagemDeErro(err))
       setSalvando(false)
     }
@@ -106,22 +143,25 @@ export default function NovoPonto() {
   return (
     <form className="pagina formulario" onSubmit={salvar}>
       <h1>Marcar uma folha</h1>
+      {semInternet && (
+        <p className="aviso">
+          📵 Você está sem internet. Pode marcar normalmente: o ponto fica guardado no celular e é enviado sozinho quando o
+          sinal voltar.
+        </p>
+      )}
 
       <section>
-        <h2>1. Foto</h2>
-        <label className="botao-foto">
-          {previa ? <img src={previa} alt="Prévia" className="foto" /> : '📷 Tirar ou escolher foto'}
-          <input type="file" accept="image/*" capture="environment" hidden
-            onChange={(e) => setFoto(e.target.files?.[0] ?? null)} />
-        </label>
-        {foto && (
-          <IdentificarFolha key={previa} foto={foto} folhas={folhas}
+        <h2>1. Fotos</h2>
+        <FotosDaPlanta fotos={fotos} aoMudar={setFotos} />
+        {fotos.length > 0 && (
+          <IdentificarFolha key={fotos.map((f) => f.id + f.orgao).join()} fotos={fotos} folhas={folhas}
             aoEscolher={(folha, nova) => {
               if (nova) setFolhas((lista) => [...lista, folha].sort((a, b) => a.nome_popular.localeCompare(b.nome_popular, 'pt-BR')))
               setFolhaId(folha.id)
               setFolhaNova(nova)
             }} />
         )}
+        {fotos.length > 0 && <p className="sutil">As fotos ficam no ponto, para quem for procurar a folha saber como ela é.</p>}
       </section>
 
       <section>
@@ -193,7 +233,15 @@ export default function NovoPonto() {
       </section>
 
       {erro && <p className="erro">{erro}</p>}
-      <button className="primario" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar no mapa'}</button>
+      <button className="primario" disabled={salvando}>
+        {salvando ? 'Salvando…' : semInternet ? 'Guardar no celular' : 'Salvar no mapa'}
+      </button>
+      {!semInternet && (
+        <button type="button" className="botao" disabled={salvando} onClick={(e) => salvar(e as unknown as FormEvent, true)}>
+          📦 Guardar no celular e enviar depois
+        </button>
+      )}
+      {!semInternet && <p className="sutil centro">Use “guardar” quando o sinal estiver fraco: o app envia sozinho mais tarde.</p>}
     </form>
   )
 }

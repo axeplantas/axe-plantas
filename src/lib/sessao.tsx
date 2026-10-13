@@ -15,6 +15,26 @@ interface Sessao {
 
 const ContextoSessao = createContext<Sessao | null>(null)
 
+const CHAVE_PERFIL = 'axe-plantas:perfil'
+
+function guardarPerfil(perfil: Perfil | null) {
+  try {
+    if (perfil) localStorage.setItem(CHAVE_PERFIL, JSON.stringify(perfil))
+    else localStorage.removeItem(CHAVE_PERFIL)
+  } catch {
+    // Sem armazenamento disponível: segue sem cópia local.
+  }
+}
+
+function lerPerfilGuardado(usuarioId: string): Perfil | null {
+  try {
+    const perfil = JSON.parse(localStorage.getItem(CHAVE_PERFIL) ?? 'null') as Perfil | null
+    return perfil?.id === usuarioId ? perfil : null
+  } catch {
+    return null
+  }
+}
+
 export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Session | null>(null)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
@@ -26,11 +46,18 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       setPerfil(null)
       return
     }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('perfis')
       .select('*, terreiros(nome, nacao)')
       .eq('id', usuarioId)
       .maybeSingle()
+    if (error) {
+      // Sem internet: usa o cadastro guardado no celular para o app continuar abrindo.
+      const guardado = lerPerfilGuardado(usuarioId)
+      if (guardado) setPerfil(guardado)
+      return
+    }
+    guardarPerfil(data as Perfil | null)
     setPerfil(data as Perfil | null)
   }, [])
 
@@ -59,6 +86,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     recarregarPerfil: () => buscarPerfil(sessao?.user.id),
     sair: async () => {
       await supabase.auth.signOut()
+      guardarPerfil(null)
       setPerfil(null)
     },
   }

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ehAdmin, useSessao } from '../lib/sessao'
+import AtivarNotificacoes from '../components/AtivarNotificacoes'
 import CampoSenha from '../components/CampoSenha'
 import { VERSAO } from '../lib/atualizacao'
 import { avisar } from '../lib/avisos'
@@ -44,6 +45,8 @@ export default function Perfil() {
         {mensagem && <p className="aviso">{mensagem}</p>}
         <button className="primario">Salvar</button>
       </form>
+
+      <AtivarNotificacoes motivo="Receba avisos no celular: quando seu acesso ou seus pontos forem aprovados e, se você valida, quando houver algo para conferir." />
 
       <TrocarSenha />
 

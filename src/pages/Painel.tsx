@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Convites from '../components/Convites'
-import Foto from '../components/Foto'
+import AtivarNotificacoes from '../components/AtivarNotificacoes'
+import Galeria from '../components/Galeria'
 import { avisar } from '../lib/avisos'
 import { linkComoChegar } from '../lib/distancia'
 import { useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
-import { ROTULO_PAPEL, ROTULO_VISIBILIDADE, type Folha, type Papel, type Perfil, type Ponto } from '../lib/tipos'
+import { fotosDoPonto, ROTULO_PAPEL, ROTULO_VISIBILIDADE, type Folha, type Papel, type Perfil, type Ponto } from '../lib/tipos'
 
 const EXPLICA_PAPEL: Record<Papel, string> = {
   membro: 'marca folhas e pontos',
@@ -72,6 +73,8 @@ export default function Painel() {
   return (
     <div className="pagina">
       <h1>Validar</h1>
+      <AtivarNotificacoes discreto
+        motivo="Receba um aviso no celular quando alguém pedir para entrar ou marcar uma folha nova na sua casa." />
       {!carregado && <p className="sutil">Carregando…</p>}
       {nadaPendente && (
         <div className="cartao tudo-em-dia">
@@ -141,7 +144,7 @@ export default function Painel() {
             <div key={p.id} className="cartao">
               <strong>{p.folhas?.nome_popular ?? 'Folha em validação'}</strong>
               <div className="sutil">Visível para: {ROTULO_VISIBILIDADE[p.visibilidade]}</div>
-              {p.foto_path && <Foto caminho={p.foto_path} alt={p.folhas?.nome_popular ?? 'Foto'} />}
+              <Galeria caminhos={fotosDoPonto(p)} nome={p.folhas?.nome_popular ?? 'Folha'} />
               {p.observacao && <p>{p.observacao}</p>}
               <a href={linkComoChegar(p.lat, p.lng)} target="_blank" rel="noreferrer">Ver o local no mapa</a>
               <div className="linha">

@@ -289,7 +289,7 @@ export function criarClienteDemo(): any {
         return {
           data: {
             sugestoes: [
-              { cientifico: 'Schinus terebinthifolia', familia: 'Anacardiaceae', nomes: ['aroeira', 'aroeira-vermelha'], confianca: 87 },
+              { cientifico: 'Schinus terebinthifolia', familia: 'Anacardiaceae', nomes: ['aroeira', 'aroeira-vermelha'], confianca: 87, referencias: [] },
               { cientifico: 'Schinus molle', familia: 'Anacardiaceae', nomes: ['aroeira-salsa', 'pimenteira'], confianca: 6 },
               { cientifico: 'Lithraea molleoides', familia: 'Anacardiaceae', nomes: ['aroeira-branca'], confianca: 2 },
             ],

@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { criarClienteDemo } from './demo'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
+export const SUPABASE_URL = url ?? ''
 const chave = import.meta.env.VITE_SUPABASE_KEY as string | undefined
 
 /** Modo demonstração: dados de exemplo, nada é salvo (npm run demo). */

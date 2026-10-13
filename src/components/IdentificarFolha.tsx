@@ -3,6 +3,7 @@ import { prepararFoto } from '../lib/imagem'
 import { useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
 import type { Folha } from '../lib/tipos'
+import type { FotoPlanta } from './FotosDaPlanta'
 
 export type FolhaResumo = Pick<Folha, 'id' | 'nome_popular' | 'nome_cientifico' | 'outros_nomes' | 'status'>
 
@@ -11,6 +12,7 @@ interface Sugestao {
   familia: string | null
   nomes: string[]
   confianca: number
+  referencias?: string[]
 }
 
 /** "Schinus terebinthifolia Raddi" → "schinus terebinthifolia"; "Mentha × piperita" → "mentha piperita". */
@@ -46,8 +48,8 @@ function capitalizar(texto: string): string {
 }
 
 /** Envia a foto ao Pl@ntNet (pela função do Supabase) e deixa escolher a sugestão certa. */
-export default function IdentificarFolha({ foto, folhas, aoEscolher }: {
-  foto: File
+export default function IdentificarFolha({ fotos, folhas, aoEscolher }: {
+  fotos: FotoPlanta[]
   folhas: FolhaResumo[]
   aoEscolher: (folha: FolhaResumo, nova: boolean) => void
 }) {
@@ -63,9 +65,11 @@ export default function IdentificarFolha({ foto, folhas, aoEscolher }: {
     setErro('')
     setBuscando(true)
     try {
-      const imagem = await prepararFoto(foto, 1280)
       const corpo = new FormData()
-      corpo.append('foto', imagem, 'foto.jpg')
+      for (const f of fotos) {
+        corpo.append('foto', await prepararFoto(f.arquivo, 1280), 'foto.jpg')
+        corpo.append('orgao', f.orgao)
+      }
       const { data, error } = await supabase.functions.invoke('identificar', { body: corpo })
       if (error) {
         const detalhe = await (error as { context?: Response }).context?.json?.().catch(() => null)
@@ -103,9 +107,13 @@ export default function IdentificarFolha({ foto, folhas, aoEscolher }: {
   if (!sugestoes) {
     return (
       <div className="identificar">
-        <button type="button" className="botao bloco" onClick={identificar} disabled={buscando}>
-          {buscando ? 'Identificando…' : '🔍 Identificar a planta pela foto'}
-        </button>
+        {navigator.onLine ? (
+          <button type="button" className="botao bloco" onClick={identificar} disabled={buscando}>
+            {buscando ? 'Identificando…' : fotos.length > 1 ? `🔍 Identificar usando as ${fotos.length} fotos` : '🔍 Identificar a planta pela foto'}
+          </button>
+        ) : (
+          <p className="aviso-pequeno">Sem internet: a identificação pela foto fica para depois. Escolha a folha pelo nome abaixo.</p>
+        )}
         {erro && <p className="erro">{erro}</p>}
       </div>
     )
@@ -137,6 +145,12 @@ export default function IdentificarFolha({ foto, folhas, aoEscolher }: {
                     </span>
                     <span className="sugestao-certeza">{salvando === s.cientifico ? '…' : `${s.confianca}%`}</span>
                   </button>
+                  {s.referencias && s.referencias.length > 0 && (
+                    <div className="referencias" aria-label="Fotos de referência desta espécie">
+                      {s.referencias.map((url) => <img key={url} src={url} alt="" loading="lazy" />)}
+                      <span className="sutil">Compare com a sua planta</span>
+                    </div>
+                  )}
                 </li>
               )
             })}

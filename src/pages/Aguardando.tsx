@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import AtivarNotificacoes from '../components/AtivarNotificacoes'
 import { useSessao } from '../lib/sessao'
 
 function ehIphone(): boolean {
@@ -47,6 +48,8 @@ export default function Aguardando() {
       <button className="primario" onClick={verificar} disabled={verificando}>
         {verificando ? 'Verificando…' : 'Já fui aprovado? Verificar'}
       </button>
+
+      <AtivarNotificacoes discreto motivo="Ative para receber um aviso no celular assim que você for aprovado(a)." />
 
       {!jaInstalado() && (
         <section className="cartao texto-esquerda">

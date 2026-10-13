@@ -1,0 +1,69 @@
+# Histórico de versões
+
+Entradas mais recentes no topo. Cada versão diz **o que mudou** e **por quê**.
+
+---
+
+## v0.10 — 13/10/2026 — Notificações, uso sem internet e identificador mais forte
+**Pedido:** avisar no celular, permitir marcar pontos sem sinal (no mato) e melhorar a identificação pela foto.
+- **Notificações no celular (Web Push):** o zelador recebe aviso de pedido de entrada; validadores, de folhas e pontos novos para conferir; a pessoa, quando é aprovada e quando o ponto dela é aprovado. No iPhone, só com o app instalado na tela inicial (regra da Apple).
+- **Guardar no celular e enviar depois:** o ponto, com as fotos, fica no aparelho e é enviado sozinho quando a internet volta. O app também abre sem internet, usando os dados guardados.
+- **Até 3 fotos por planta** (folha, flor, fruto, caule, planta inteira), todas enviadas juntas ao Pl@ntNet, o que aumenta a certeza.
+- **Fotos de referência** em cada sugestão, para comparar com a planta real.
+- **As fotos ficam no ponto:** quem for procurar a folha vê todas no mapa, e a página da folha mostra "Como ela é".
+- Início destes registros (pasta `docs/`).
+
+## v0.9 — 13/10/2026 01:03 — Revisão de usabilidade
+**Motivo:** revisão completa com foco em erros comuns de usuários pouco acostumados com apps.
+- Selo com número de pendências na aba Validar; pedidos de entrada no topo.
+- Confirmação antes de recusar, remover ou promover alguém a zelador.
+- Busca de folha digitando o nome, no lugar de listas longas.
+- Aviso de folha repetida ao cadastrar; edição de folhas.
+- Mapa abre na posição da pessoa; filtro só com folhas marcadas; botão de localização.
+- "Mostrar senha", correção de e-mail digitado errado, trocar senha.
+- Tela de espera confere a aprovação sozinha e ensina a instalar.
+- Tradução do lema na entrada: *Kosi ewe, kosi Orisa*, "Sem folha, não há Orixá".
+
+## v0.8 — 13/10/2026 00:42 — Links de convite mais claros
+**Problema real:** o link de zelador (uso único) foi enviado no grupo e as outras pessoas não conseguiram entrar.
+- O link dos filhos aparece primeiro; o de zelador fica destacado como "1 pessoa só".
+- Mensagem de link já usado explica o que fazer.
+
+## v0.7 — 13/10/2026 00:32 — Reconhecimento de nomes no catálogo
+**Problema real:** o Pl@ntNet chama o boldo pelo nome científico atual (*Coleus barbatus*) e o catálogo usava o antigo.
+- O app passa a reconhecer a folha também pelo nome popular, evitando folhas repetidas.
+
+## v0.6 — 13/10/2026 00:24 — Atualização automática
+**Problema real:** o celular continuava com a versão antiga do app.
+- O app procura versão nova ao abrir e sempre que volta para a tela, e recarrega sozinho.
+- Número da versão no Perfil.
+
+## v0.5 — 13/10/2026 00:19 — Identificação pela foto
+- Integração com o Pl@ntNet (gratuito, 500 identificações/dia), por uma função no servidor que guarda a chave em cofre.
+- Se a folha sugerida não existe no catálogo, o app cadastra sozinho (o validador confere).
+
+## v0.4 — 13/10/2026 00:15 — Catálogo inicial
+- 61 folhas comuns nos terreiros, com nomes populares, nomes científicos e alertas de toxicidade, sem fundamento.
+
+## v0.3 — 12/10/2026 23:50 — Convites por link
+**Pedido:** o administrador cria os terreiros e convida os zeladores; os zeladores convidam os filhos.
+- Fim do código fixo por terreiro; links de convite com validade e limite de uso.
+- Área de administração.
+
+## v0.2 — 12/10/2026 23:35 — Páginas legais
+- Política de Privacidade e Termos de Uso preenchidos (responsável: Projeto Axé Plantas).
+
+## v0.1 — 12/10/2026 23:33 — Primeira versão publicada
+- Web app instalável (PWA) para iPhone e Android.
+- Mapa compartilhado com visibilidade por ponto (só eu, meu terreiro, rede).
+- Aprovação de membros pelo zelador e validação de folhas e pontos por casa.
+- Fundamento por casa, visível só para ela.
+- Obrigações: listas de folhas com o ponto mais próximo e "como chegar".
+- Exclusão de conta no app e consentimento LGPD no cadastro.
+- Marca (logo) redesenhada em vetor e modo demonstração.
+
+## Antes do código — 12/10/2026
+- Ideia inicial: app para marcar no mapa onde estão ervas e árvores, com foto e localização.
+- Foco definido no povo de terreiro (Candomblé, Umbanda, Jurema), com piloto em 3 casas e cerca de 100 usuários.
+- Restrições: projeto pessoal (nenhuma conta corporativa) e custo zero no começo.
+- Nome: **Axé Plantas**, trocadilho com "achar plantas".

@@ -1035,3 +1035,142 @@ input:disabled {
   font-size: 0.85rem;
   color: var(--sutil);
 }
+
+/* ---------- Várias fotos, fila no celular e notificações ---------- */
+
+.fotos-planta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.foto-planta {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.6rem;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.foto-planta img {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.foto-planta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--texto);
+  font-size: 0.85rem;
+  min-height: 34px;
+}
+
+.chip.ativo {
+  border-color: var(--verde);
+  background: var(--verde);
+  color: #fff;
+}
+
+.galeria {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.galeria .foto,
+.galeria a {
+  flex: 0 0 85%;
+  scroll-snap-align: start;
+}
+
+.grade-fotos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.grade-fotos .foto {
+  height: 110px;
+  margin: 0;
+}
+
+.referencias {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.2rem 0;
+  overflow-x: auto;
+}
+
+.referencias img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.referencias .sutil {
+  font-size: 0.75rem;
+  min-width: 70px;
+}
+
+.guardados {
+  max-width: 640px;
+  margin: 0.6rem auto 0;
+  padding: 0 16px;
+}
+
+.guardados-resumo {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: #fff1c9;
+  color: var(--texto);
+  text-align: left;
+  font-weight: 600;
+}
+
+.guardados-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem 0.2rem;
+}
+
+.mapa-tela + .guardados,
+.guardados:has(+ .mapa-tela) {
+  position: absolute;
+  z-index: 600;
+  top: 64px;
+  left: 0;
+  right: 0;
+}
+
+.notificacoes p {
+  margin: 0.3rem 0 0.6rem;
+}
+
+.centro {
+  text-align: center;
+}

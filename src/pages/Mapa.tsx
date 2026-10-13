@@ -2,12 +2,12 @@ import type { LatLngBoundsExpression, LatLngExpression, Map as MapaLeaflet } fro
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet'
 import { Link, useSearchParams } from 'react-router-dom'
-import Foto from '../components/Foto'
+import Galeria from '../components/Galeria'
 import { avisar } from '../lib/avisos'
 import { linkComoChegar } from '../lib/distancia'
 import { useSessao } from '../lib/sessao'
 import { BUCKET_FOTOS, mensagemDeErro, modoDemo, supabase } from '../lib/supabase'
-import { ROTULO_VISIBILIDADE, type Ponto } from '../lib/tipos'
+import { fotosDoPonto, ROTULO_VISIBILIDADE, type Ponto } from '../lib/tipos'
 
 const CENTRO_BRASIL: LatLngExpression = [-14.235, -51.925]
 
@@ -98,8 +98,9 @@ export default function Mapa() {
     if (!confirm(`Apagar este ponto de ${ponto.folhas?.nome_popular ?? 'folha'} do mapa? Isso não pode ser desfeito.`)) return
     const { error } = await supabase.from('pontos').delete().eq('id', ponto.id)
     if (error) return avisar(mensagemDeErro(error), 'erro')
-    if (ponto.foto_path && ponto.criado_por === perfil?.id) {
-      await supabase.storage.from(BUCKET_FOTOS).remove([ponto.foto_path])
+    const fotos = fotosDoPonto(ponto)
+    if (fotos.length && ponto.criado_por === perfil?.id) {
+      await supabase.storage.from(BUCKET_FOTOS).remove(fotos)
     }
     setPontos((lista) => lista.filter((p) => p.id !== ponto.id))
     avisar('Ponto apagado.')
@@ -178,7 +179,7 @@ export default function Mapa() {
                 {p.folhas?.toxica && <div className="alerta-toxica">⚠️ Tóxica{p.folhas.alerta ? `: ${p.folhas.alerta}` : ''}</div>}
                 {p.status === 'pendente' && <div className="etiqueta">Aguardando validação</div>}
                 <div className="sutil">Visível para: {ROTULO_VISIBILIDADE[p.visibilidade]}</div>
-                {p.foto_path && <Foto caminho={p.foto_path} alt={p.folhas?.nome_popular ?? 'Foto'} />}
+                <Galeria caminhos={fotosDoPonto(p)} nome={p.folhas?.nome_popular ?? 'Folha'} />
                 {p.observacao && <p>{p.observacao}</p>}
                 <div className="popup-acoes">
                   <a className="botao" href={linkComoChegar(p.lat, p.lng)} target="_blank" rel="noreferrer">

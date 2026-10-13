@@ -38,20 +38,25 @@ Deno.serve(async (req) => {
     // Só membros aprovados (ou o administrador) podem usar a cota de identificações.
     if (!(await podeUsar(req))) return resposta({ erro: 'Acesso não autorizado.' }, 403)
 
+    // Até 3 fotos da mesma planta, cada uma com a parte fotografada (folha, flor...).
     const entrada = await req.formData()
-    const foto = entrada.get('foto')
-    if (!(foto instanceof File)) return resposta({ erro: 'Envie uma foto.' }, 400)
-    if (foto.size > 5 * 1024 * 1024) return resposta({ erro: 'Foto muito grande.' }, 400)
+    const fotos = entrada.getAll('foto').filter((f): f is File => f instanceof File).slice(0, 3)
+    const orgaos = entrada.getAll('orgao').map(String)
+    if (fotos.length === 0) return resposta({ erro: 'Envie uma foto.' }, 400)
+    if (fotos.some((f) => f.size > 5 * 1024 * 1024)) return resposta({ erro: 'Foto muito grande.' }, 400)
 
+    const validos = ['leaf', 'flower', 'fruit', 'bark', 'habit', 'auto']
     const envio = new FormData()
-    envio.append('images', foto, 'foto.jpg')
-    envio.append('organs', 'auto')
+    fotos.forEach((foto, i) => {
+      envio.append('images', foto, `foto${i}.jpg`)
+      envio.append('organs', validos.includes(orgaos[i]) ? orgaos[i] : 'auto')
+    })
 
     const url = new URL('https://my-api.plantnet.org/v2/identify/all')
     url.searchParams.set('api-key', Deno.env.get('PLANTNET_KEY') ?? '')
     url.searchParams.set('lang', 'pt')
     url.searchParams.set('nb-results', '5')
-    url.searchParams.set('include-related-images', 'false')
+    url.searchParams.set('include-related-images', 'true')
 
     const consulta = await fetch(url, { method: 'POST', body: envio })
     // O Pl@ntNet responde 404 quando não reconhece nenhuma planta na foto.
@@ -66,11 +71,14 @@ Deno.serve(async (req) => {
         commonNames?: string[]
         family?: { scientificNameWithoutAuthor?: string }
       }
+      images?: { url?: { s?: string; m?: string } }[]
     }) => ({
       cientifico: r.species.scientificNameWithoutAuthor,
       familia: r.species.family?.scientificNameWithoutAuthor ?? null,
       nomes: r.species.commonNames ?? [],
       confianca: Math.round(r.score * 100),
+      // Fotos de referência da espécie, para comparar com a planta real.
+      referencias: (r.images ?? []).map((img) => img.url?.s ?? img.url?.m).filter(Boolean).slice(0, 3),
     }))
 
     return resposta({ sugestoes, restantes: dados.remainingIdentificationRequests ?? null })

@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import Foto from '../components/Foto'
 import { avisar } from '../lib/avisos'
 import { ehAdmin, ehValidador, useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
-import type { Folha, Fundamento } from '../lib/tipos'
+import { fotosDoPonto, type Folha, type Fundamento } from '../lib/tipos'
 
 export default function FolhaDetalhe() {
   const { id } = useParams()
@@ -12,6 +13,7 @@ export default function FolhaDetalhe() {
   const [folha, setFolha] = useState<Folha | null>(null)
   const [fundamento, setFundamento] = useState<Fundamento | null>(null)
   const [qtdPontos, setQtdPontos] = useState(0)
+  const [fotos, setFotos] = useState<string[]>([])
   const [carregando, setCarregando] = useState(true)
   const [editando, setEditando] = useState(false)
   const [editandoFolha, setEditandoFolha] = useState(false)
@@ -21,11 +23,13 @@ export default function FolhaDetalhe() {
     Promise.all([
       supabase.from('folhas').select('*').eq('id', id).maybeSingle(),
       supabase.from('fundamentos').select('*').eq('folha_id', id).maybeSingle(),
-      supabase.from('pontos').select('id', { count: 'exact', head: true }).eq('folha_id', id).neq('status', 'recusado'),
+      supabase.from('pontos').select('fotos, foto_path').eq('folha_id', id).neq('status', 'recusado').order('created_at', { ascending: false }),
     ]).then(([f, fund, pontos]) => {
       setFolha(f.data as Folha | null)
       setFundamento(fund.data as Fundamento | null)
-      setQtdPontos(pontos.count ?? 0)
+      const lista = (pontos.data ?? []) as { fotos: string[] | null; foto_path: string | null }[]
+      setQtdPontos(lista.length)
+      setFotos(lista.flatMap(fotosDoPonto).slice(0, 6))
       setCarregando(false)
     })
   }, [id])
@@ -63,6 +67,15 @@ export default function FolhaDetalhe() {
         <Link to={`/?folha=${folha.id}`} className="botao">Ver no mapa ({qtdPontos})</Link>
         <Link to={`/marcar?folha=${folha.id}`} className="botao">Marcar onde encontrei</Link>
       </div>
+
+      {fotos.length > 0 && (
+        <section>
+          <h2>Como ela é</h2>
+          <div className="grade-fotos">
+            {fotos.map((c) => <Foto key={c} caminho={c} alt={folha.nome_popular} />)}
+          </div>
+        </section>
+      )}
 
       <section className="cartao">
         <div className="cabecalho">

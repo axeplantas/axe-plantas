@@ -44,6 +44,8 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
+        // Recebe as notificações (public/push-sw.js).
+        importScripts: ['push-sw.js'],
         skipWaiting: true,
         clientsClaim: true,
         // Guarda os pedaços do mapa já vistos, para abrir mesmo com sinal fraco.
