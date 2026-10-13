@@ -2,14 +2,27 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Versão mostrada no Perfil: data e hora da publicação (horário de Brasília).
+const versao = new Date().toLocaleString('pt-BR', {
+  timeZone: 'America/Sao_Paulo',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
 // https://vite.dev/config/
 export default defineConfig({
   // Caminhos relativos: funciona em qualquer hospedagem (inclusive GitHub Pages).
   base: './',
+  define: { __VERSAO__: JSON.stringify(versao) },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // O registro é feito em src/lib/atualizacao.ts, que também procura versões novas.
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'favicon-32x32.png', 'logo.svg', 'logo-vertical.svg', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'Axé Plantas',
@@ -30,6 +43,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         // Guarda os pedaços do mapa já vistos, para abrir mesmo com sinal fraco.
         runtimeCaching: [
           {

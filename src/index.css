@@ -776,3 +776,10 @@ dl dd {
   color: var(--verde);
   flex-shrink: 0;
 }
+
+.versao {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--sutil);
+}

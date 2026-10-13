@@ -4,9 +4,12 @@ import '@fontsource/cormorant-garamond/700.css'
 import 'leaflet/dist/leaflet.css'
 import './index.css'
 import App from './App.tsx'
+import { manterAtualizado } from './lib/atualizacao.ts'
 import { definirCentroDemo } from './lib/demo.ts'
 import { ProvedorSessao } from './lib/sessao.tsx'
 import { modoDemo } from './lib/supabase.ts'
+
+manterAtualizado()
 
 // Na demonstração, os pontos de exemplo aparecem perto de onde você está.
 if (modoDemo) {

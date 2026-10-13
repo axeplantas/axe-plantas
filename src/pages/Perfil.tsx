@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ehAdmin, useSessao } from '../lib/sessao'
+import { VERSAO } from '../lib/atualizacao'
 import { BUCKET_FOTOS, mensagemDeErro, supabase } from '../lib/supabase'
 import { ROTULO_PAPEL } from '../lib/tipos'
 
@@ -65,6 +66,8 @@ export default function Perfil() {
       <button className="link perigo" onClick={sair}>Sair da conta</button>
 
       <ExcluirConta />
+
+      <p className="versao">Versão de {VERSAO}</p>
     </div>
   )
 }
