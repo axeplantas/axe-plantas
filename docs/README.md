@@ -5,11 +5,14 @@ Registros do desenvolvimento do projeto, para quem chega agora: novos desenvolve
 | Documento | Para quem | O que tem |
 |---|---|---|
 | [VISAO.md](VISAO.md) | Todos, investidores | O problema, a solução, o público e os números do piloto |
+| [IDEIAS.md](IDEIAS.md) | Todos | Ideias numeradas que ainda não foram feitas |
 | [HISTORICO.md](HISTORICO.md) | Todos | Linha do tempo: cada versão, o que mudou e por quê |
 | [DECISOES.md](DECISOES.md) | Desenvolvedores, investidores | As decisões importantes, as alternativas e os motivos |
 | [ARQUITETURA.md](ARQUITETURA.md) | Desenvolvedores | Como o app funciona por dentro e como rodar |
 
 ## Como manter estes registros
+
+Ideias novas entram em [IDEIAS.md](IDEIAS.md) com número. Quando uma é implementada, sai de lá e vai para o histórico com a referência "(Ideia NN)".
 
 A cada atualização publicada:
 1. Acrescente uma entrada no topo do [HISTORICO.md](HISTORICO.md), com data, versão, o que mudou e o motivo (de preferência o pedido ou problema de um usuário).
