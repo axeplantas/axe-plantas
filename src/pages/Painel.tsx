@@ -1,24 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import Convites from '../components/Convites'
 import AtivarNotificacoes from '../components/AtivarNotificacoes'
 import Galeria from '../components/Galeria'
 import { avisar } from '../lib/avisos'
 import { linkComoChegar } from '../lib/distancia'
-import { useSessao } from '../lib/sessao'
+import { ehZelador, useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
-import { fotosDoPonto, ROTULO_PAPEL, ROTULO_VISIBILIDADE, type Folha, type Papel, type Perfil, type Ponto } from '../lib/tipos'
-
-const EXPLICA_PAPEL: Record<Papel, string> = {
-  membro: 'marca folhas e pontos',
-  validador: 'também aprova folhas e pontos da casa',
-  zelador: 'também aprova e remove membros e escolhe validadores',
-}
+import { fotosDoPonto, ROTULO_VISIBILIDADE, type Folha, type MembroDaCasa, type Ponto } from '../lib/tipos'
 
 export default function Painel() {
-  const { perfil } = useSessao()
-  const souZelador = perfil?.papel === 'zelador'
-  const [membros, setMembros] = useState<Perfil[]>([])
+  const { perfil, casaAtiva } = useSessao()
+  const souZelador = ehZelador(casaAtiva)
+  const [pendentes, setPendentes] = useState<MembroDaCasa[]>([])
   const [folhas, setFolhas] = useState<Folha[]>([])
   const [pontos, setPontos] = useState<Ponto[]>([])
   const [carregado, setCarregado] = useState(false)
@@ -36,12 +29,12 @@ export default function Painel() {
         .neq('visibilidade', 'privado')
         .order('created_at'),
       souZelador
-        ? supabase.from('perfis').select('*').eq('terreiro_id', perfil.terreiro_id).neq('id', perfil.id).order('created_at')
+        ? supabase.from('membros').select('*, perfis(apelido)').eq('terreiro_id', perfil.terreiro_id).eq('aprovado', false).order('created_at')
         : Promise.resolve({ data: [] }),
     ])
     setFolhas((f.data ?? []) as Folha[])
     setPontos((p.data ?? []) as Ponto[])
-    setMembros((m.data ?? []) as Perfil[])
+    setPendentes((m.data ?? []) as unknown as MembroDaCasa[])
     setCarregado(true)
   }, [perfil, souZelador])
 
@@ -58,20 +51,11 @@ export default function Painel() {
     await carregar()
   }
 
-  function mudarPapel(m: Perfil, papel: Papel) {
-    if (papel === 'zelador' && !confirm(`Tornar ${m.apelido} zelador(a)? Zeladores podem aprovar e remover membros da casa.`)) {
-      return carregar()
-    }
-    executar(m.id, supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: papel }),
-      `${m.apelido} agora é ${ROTULO_PAPEL[papel].toLowerCase()}.`)
-  }
-
-  const pendentes = membros.filter((m) => !m.aprovado)
-  const aprovados = membros.filter((m) => m.aprovado)
   const nadaPendente = carregado && pendentes.length === 0 && folhas.length === 0 && pontos.length === 0
 
   return (
     <div className="pagina">
+      <Link to="/casa" className="link">← Casa</Link>
       <h1>Validar</h1>
       <AtivarNotificacoes discreto
         motivo="Receba um aviso no celular quando alguém pedir para entrar ou marcar uma folha nova na sua casa." />
@@ -88,18 +72,20 @@ export default function Painel() {
           <h2>Pedidos de entrada ({pendentes.length})</h2>
           <p className="sutil">Só aprove quem você conhece e é da casa.</p>
           {pendentes.map((m) => (
-            <div key={m.id} className="cartao">
-              <strong>{m.apelido}</strong>
+            <div key={m.perfil_id} className="cartao">
+              <strong>{m.perfis?.apelido}</strong>
               <div className="sutil">Pediu em {new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
               <div className="linha">
-                <button className="primario" disabled={ocupado === m.id}
-                  onClick={() => executar(m.id, supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: 'membro' }),
-                    `${m.apelido} foi aprovado(a).`)}>
+                <button className="primario" disabled={ocupado === m.perfil_id}
+                  onClick={() => executar(m.perfil_id, supabase.rpc('atualizar_membro', {
+                    p_usuario: m.perfil_id, p_terreiro: m.terreiro_id, p_aprovado: true, p_papel: 'membro',
+                    p_contador: false, p_isento: false, p_mensalidade: null,
+                  }), `${m.perfis?.apelido} foi aprovado(a).`)}>
                   Aprovar
                 </button>
-                <button className="link perigo" disabled={ocupado === m.id}
-                  onClick={() => confirm(`Recusar o pedido de ${m.apelido}? O cadastro será apagado.`) &&
-                    executar(m.id, supabase.rpc('remover_membro', { p_usuario: m.id }), 'Pedido recusado.')}>
+                <button className="link perigo" disabled={ocupado === m.perfil_id}
+                  onClick={() => confirm(`Recusar o pedido de ${m.perfis?.apelido}?`) &&
+                    executar(m.perfil_id, supabase.rpc('remover_da_casa', { p_usuario: m.perfil_id, p_terreiro: m.terreiro_id }), 'Pedido recusado.')}>
                   Recusar
                 </button>
               </div>
@@ -163,39 +149,8 @@ export default function Painel() {
         </section>
       )}
 
-      {souZelador && perfil?.terreiro_id && (
-        <section className="cartao">
-          <Convites terreiroId={perfil.terreiro_id} tipo="membro"
-            titulo="👥 Convidar filhos da casa"
-            explicacao="Envie este link no grupo da casa. Várias pessoas podem usar; os pedidos aparecem no topo desta tela para você aprovar. Vale por 30 dias." />
-        </section>
-      )}
-
       {souZelador && (
-        <section>
-          <h2>Membros da casa ({aprovados.length})</h2>
-          <p className="sutil">
-            <strong>Membro</strong> {EXPLICA_PAPEL.membro}; <strong>validador</strong> {EXPLICA_PAPEL.validador};{' '}
-            <strong>zelador</strong> {EXPLICA_PAPEL.zelador}.
-          </p>
-          {aprovados.length === 0 && <p className="sutil">Ninguém além de você ainda. Envie o link de convite acima.</p>}
-          {aprovados.map((m) => (
-            <div key={m.id} className="cartao linha">
-              <strong className="cresce">{m.apelido}</strong>
-              <select value={m.papel} disabled={ocupado === m.id} aria-label={`Papel de ${m.apelido}`}
-                onChange={(e) => mudarPapel(m, e.target.value as Papel)}>
-                {(Object.keys(ROTULO_PAPEL) as Papel[]).map((papel) => (
-                  <option key={papel} value={papel}>{ROTULO_PAPEL[papel]}</option>
-                ))}
-              </select>
-              <button className="link perigo" disabled={ocupado === m.id}
-                onClick={() => confirm(`Remover ${m.apelido} do aplicativo? A conta dela será apagada.`) &&
-                  executar(m.id, supabase.rpc('remover_membro', { p_usuario: m.id }), `${m.apelido} foi removido(a).`)}>
-                Remover
-              </button>
-            </div>
-          ))}
-        </section>
+        <Link to="/casa/membros" className="botao bloco">👥 Filhos da casa, papéis e convites</Link>
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { ehValidador, useSessao } from '../lib/sessao'
+import { ehGestorFinanceiro, ehValidador, ehZelador, useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import Avisos from './Avisos'
 import InstalarApp from './InstalarApp'
@@ -8,24 +8,33 @@ import PontosGuardados from './PontosGuardados'
 
 /** Quantas coisas esperam o validador/zelador: pedidos de entrada, folhas e pontos. */
 function usePendencias(): number {
-  const { perfil } = useSessao()
+  const { perfil, casaAtiva } = useSessao()
   const local = useLocation()
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
-    if (!perfil?.terreiro_id || !ehValidador(perfil)) return
+    const gestor = ehGestorFinanceiro(casaAtiva)
+    if (!perfil?.terreiro_id || (!ehValidador(perfil) && !gestor)) return
     const terreiro = perfil.terreiro_id
     let ativo = true
 
     async function contar() {
-      const consultas = [
-        supabase.from('folhas').select('id', { count: 'exact', head: true }).eq('status', 'pendente').eq('terreiro_id', terreiro),
-        supabase.from('pontos').select('id', { count: 'exact', head: true }).eq('status', 'pendente')
-          .eq('terreiro_id', terreiro).neq('visibilidade', 'privado'),
-      ]
-      if (perfil?.papel === 'zelador') {
+      const consultas: PromiseLike<{ count: number | null }>[] = []
+      if (ehValidador(perfil)) {
         consultas.push(
-          supabase.from('perfis').select('id', { count: 'exact', head: true }).eq('aprovado', false).eq('terreiro_id', terreiro),
+          supabase.from('folhas').select('id', { count: 'exact', head: true }).eq('status', 'pendente').eq('terreiro_id', terreiro),
+          supabase.from('pontos').select('id', { count: 'exact', head: true }).eq('status', 'pendente')
+            .eq('terreiro_id', terreiro).neq('visibilidade', 'privado'),
+        )
+      }
+      if (ehZelador(casaAtiva)) {
+        consultas.push(
+          supabase.from('membros').select('perfil_id', { count: 'exact', head: true }).eq('aprovado', false).eq('terreiro_id', terreiro),
+        )
+      }
+      if (gestor) {
+        consultas.push(
+          supabase.from('pagamentos').select('id', { count: 'exact', head: true }).eq('status', 'informado').eq('terreiro_id', terreiro),
         )
       }
       const resultados = await Promise.all(consultas)
@@ -39,13 +48,12 @@ function usePendencias(): number {
       ativo = false
       document.removeEventListener('visibilitychange', aoVoltar)
     }
-  }, [perfil, local.pathname])
+  }, [perfil, casaAtiva, local.pathname])
 
   return total
 }
 
 export default function Layout() {
-  const { perfil } = useSessao()
   const pendencias = usePendencias()
 
   return (
@@ -63,20 +71,15 @@ export default function Layout() {
         <NavLink to="/folhas">
           <span aria-hidden>🌿</span>Folhas
         </NavLink>
-        <NavLink to="/obrigacoes">
-          <span aria-hidden>📋</span>Obrigação
-        </NavLink>
         <NavLink to="/marcar" className="menu-destaque">
           <span aria-hidden>＋</span>Marcar
         </NavLink>
-        {ehValidador(perfil) && (
-          <NavLink to="/painel" aria-label={pendencias ? `Validar, ${pendencias} pendentes` : 'Validar'}>
-            <span aria-hidden className="icone-com-selo">
-              ✔️{pendencias > 0 && <b className="selo">{pendencias > 9 ? '9+' : pendencias}</b>}
-            </span>
-            Validar
-          </NavLink>
-        )}
+        <NavLink to="/casa" aria-label={pendencias ? `Casa, ${pendencias} pendentes` : 'Casa'}>
+          <span aria-hidden className="icone-com-selo">
+            🏠{pendencias > 0 && <b className="selo">{pendencias > 9 ? '9+' : pendencias}</b>}
+          </span>
+          Casa
+        </NavLink>
         <NavLink to="/perfil">
           <span aria-hidden>👤</span>Perfil
         </NavLink>

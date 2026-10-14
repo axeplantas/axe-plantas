@@ -11,18 +11,6 @@ Banco de ideias do Axé Plantas: o que ainda **não foi feito**.
 
 ## Produto
 
-**Ideia 01 — Gestão de mensalidades do terreiro**
-Registro de quem pagou e quem está devendo, com lembretes para os filhos. Valores visíveis só para o zelador (e quem ele autorizar). Primeiro só o controle; receber pelo app fica para a Ideia 07.
-*Origem: conversa com o pai de santo, 14/10/2026.*
-
-**Ideia 02 — Controle de materiais da casa**
-Estoque simples: o que entra, o que sai e o que está acabando (folhas, velas, louças, materiais de trabalho). Avisa quando algo está no fim.
-*Origem: conversa com o pai de santo, 14/10/2026.*
-
-**Ideia 03 — Calendário oficial da casa**
-Festas, giras, obrigações e avisos, com notificação para os filhos.
-*Origem: conversa com o pai de santo, 14/10/2026.*
-
 **Ideia 04 — Obrigação inteligente**
 Ao marcar uma obrigação no calendário, o app monta a lista de folhas e materiais (descontando o que a casa já tem) e mostra, para cada item, onde conseguir: no mapa, com um filho que mora perto ou numa loja próxima.
 *Origem: conversa de 14/10/2026.*
@@ -36,7 +24,7 @@ Lojas de produtos naturais e de artigos religiosos cadastram seu catálogo; o ap
 *Origem: Jorge, 14/10/2026.*
 
 **Ideia 07 — Receber mensalidades pelo app (Pix)**
-Cobrança e baixa automática do pagamento. Depende da Ideia 01 e de um serviço de pagamentos (com taxas).
+Cobrança e baixa automática do pagamento, sem precisar de comprovante. Hoje o filho paga por fora e envia o comprovante (feito na v0.11); esta ideia exige um serviço de pagamentos (com taxas).
 *Origem: conversa de 14/10/2026.*
 
 **Ideia 08 — Painel de números**
@@ -78,6 +66,10 @@ MEI, empresa ou associação (esta facilita os editais) quando entrar dinheiro. 
 **Ideia 16 — Plano pago para os terreiros**
 Mapa e app gratuitos para os filhos; "plano da casa" mensal para o zelador com a gestão (Ideias 01 a 04); lojas pagando destaque ou comissão (Ideia 06).
 *Origem: conversa de 14/10/2026.*
+
+**Ideia 17 — Lembrete automático de mensalidade**
+Avisar no celular, no dia do vencimento, quem ainda não pagou o mês.
+*Origem: construção da v0.11, 14/10/2026.*
 
 ---
 

@@ -119,3 +119,131 @@ export function fotosDoPonto(p: Pick<Ponto, 'fotos' | 'foto_path'>): string[] {
   if (p.fotos && p.fotos.length > 0) return p.fotos
   return p.foto_path ? [p.foto_path] : []
 }
+
+/** O vínculo de uma pessoa com uma casa (uma pessoa pode estar em várias). */
+export interface Casa {
+  terreiro_id: string
+  papel: Papel
+  aprovado: boolean
+  contador: boolean
+  isento: boolean
+  mensalidade_valor: number | null
+  aprovado_em: string | null
+  terreiros: Pick<Terreiro, 'nome' | 'nacao'> | null
+}
+
+export interface MembroDaCasa extends Omit<Casa, 'terreiros'> {
+  perfil_id: string
+  created_at: string
+  perfis: { apelido: string } | null
+}
+
+export interface FinanceiroCasa {
+  terreiro_id: string
+  cobra_mensalidade: boolean
+  valor_padrao: number
+  dia_vencimento: number
+  instrucoes: string | null
+  inicio: string
+}
+
+export interface Cobranca {
+  id: string
+  terreiro_id: string
+  tipo: 'mensalidade' | 'contribuicao'
+  titulo: string
+  descricao: string | null
+  competencia: string | null
+  vencimento: string
+  valor: number | null
+  para_todos: boolean
+  created_at: string
+}
+
+export type SituacaoPagamento = 'informado' | 'confirmado' | 'recusado' | 'isento'
+
+export interface Pagamento {
+  id: string
+  cobranca_id: string
+  terreiro_id: string
+  perfil_id: string
+  valor: number | null
+  status: SituacaoPagamento
+  comprovante: string | null
+  observacao: string | null
+  motivo: string | null
+  informado_em: string | null
+  conferido_em: string | null
+}
+
+export type TipoEvento = 'festa' | 'gira' | 'obrigacao' | 'reuniao' | 'mutirao' | 'outro'
+
+export const ROTULO_EVENTO: Record<TipoEvento, string> = {
+  festa: '🎉 Festa',
+  gira: '🥁 Gira',
+  obrigacao: '🕯️ Obrigação',
+  reuniao: '🗣️ Reunião',
+  mutirao: '🧹 Mutirão',
+  outro: '📌 Outro',
+}
+
+export interface Evento {
+  id: string
+  terreiro_id: string
+  titulo: string
+  tipo: TipoEvento
+  data: string
+  hora: string | null
+  hora_fim: string | null
+  local: string | null
+  descricao: string | null
+}
+
+export type CategoriaMaterial = 'folha' | 'animal' | 'vela' | 'louca' | 'bebida' | 'alimento' | 'tecido' | 'ferramenta' | 'outro'
+
+export const ROTULO_CATEGORIA: Record<CategoriaMaterial, string> = {
+  folha: '🌿 Folhas e ervas',
+  animal: '🐓 Animais',
+  vela: '🕯️ Velas',
+  louca: '🏺 Louças e alguidares',
+  bebida: '🍶 Bebidas',
+  alimento: '🍚 Alimentos e grãos',
+  tecido: '🧵 Tecidos e roupas',
+  ferramenta: '🔱 Ferramentas e fios',
+  outro: '📦 Outros',
+}
+
+export const UNIDADES = ['unidade', 'maço', 'cabeça', 'kg', 'g', 'litro', 'ml', 'metro', 'pacote', 'caixa', 'dúzia']
+
+export interface Material {
+  id: string
+  terreiro_id: string
+  nome: string
+  categoria: CategoriaMaterial
+  unidade: string
+  quantidade: number
+  minimo: number | null
+  observacao: string | null
+  folha_id: string | null
+  atualizado_em: string
+}
+
+export interface Movimento {
+  id: string
+  material_id: string
+  tipo: 'entrada' | 'saida' | 'ajuste'
+  quantidade: number
+  motivo: string | null
+  perfil_id: string | null
+  created_at: string
+  perfis: { apelido: string } | null
+}
+
+export function formatarReais(valor: number | null | undefined): string {
+  return (valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export function formatarDataCurta(data: string): string {
+  const [ano, mes, dia] = data.slice(0, 10).split('-')
+  return `${dia}/${mes}/${ano}`
+}

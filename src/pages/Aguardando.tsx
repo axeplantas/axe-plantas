@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import AtivarNotificacoes from '../components/AtivarNotificacoes'
+import TrocarCasa from '../components/TrocarCasa'
 import { useSessao } from '../lib/sessao'
 
 function ehIphone(): boolean {
@@ -14,7 +15,8 @@ function jaInstalado(): boolean {
 }
 
 export default function Aguardando() {
-  const { perfil, recarregarPerfil, sair } = useSessao()
+  const { perfil, casas, recarregarPerfil, sair } = useSessao()
+  const outraAprovada = casas.some((c) => c.aprovado && c.terreiro_id !== perfil?.terreiro_id)
   const [verificando, setVerificando] = useState(false)
 
   // Confere sozinho de tempos em tempos e sempre que a pessoa volta para o app.
@@ -48,6 +50,13 @@ export default function Aguardando() {
       <button className="primario" onClick={verificar} disabled={verificando}>
         {verificando ? 'Verificando…' : 'Já fui aprovado? Verificar'}
       </button>
+
+      {outraAprovada && (
+        <div className="cartao texto-esquerda">
+          <p>Enquanto isso, você pode usar o app numa casa em que já foi aprovado(a):</p>
+          <TrocarCasa />
+        </div>
+      )}
 
       <AtivarNotificacoes discreto motivo="Ative para receber um aviso no celular assim que você for aprovado(a)." />
 

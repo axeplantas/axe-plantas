@@ -49,6 +49,19 @@ Cada decisão com o contexto, a escolha e o motivo. Úteis para quem for continu
 - A localização do celular não é guardada: só o ponto da planta.
 - Terreiros não aparecem no mapa, e pontos compartilhados não mostram quem marcou.
 
+### D12. Uma pessoa, várias casas
+- **Contexto:** é comum ser filho de mais de uma casa (ex.: Candomblé e Jurema/Umbanda) e ter a própria casa.
+- **Escolha:** um vínculo por casa (tabela `membros`), com papel, aprovação e função de contador próprios. A "casa ativa" escolhida no app decide o que aparece; as regras de acesso valem por casa.
+- **Consequência:** tirar alguém de uma casa não apaga a conta dele; a exclusão de conta é sempre decisão da própria pessoa.
+
+### D13. Mensalidades sem movimentar dinheiro
+- **Escolha:** o app registra cobranças e comprovantes; o pagamento acontece fora (Pix, dinheiro) e é conferido por uma pessoa (zelador ou contador).
+- **Motivo:** custo zero, nenhuma taxa, nenhum dado bancário guardado e menos responsabilidade regulatória no piloto. Cobrança automática fica para depois (Ideia 07).
+
+### D14. Materiais com acesso escolhido pelo zelador
+- **Contexto:** o estoque pode incluir itens sensíveis da casa (como animais), e cada casa tem a sua forma de tratar isso.
+- **Escolha:** o zelador decide: toda a casa vê, ou só filhos escolhidos; e quem pode editar.
+
 ### D11. Código aberto no GitHub
 - **Motivo:** o GitHub Pages gratuito exige repositório público. Nenhum dado dos terreiros fica no código.
 - **Revisitar:** se houver investimento, avaliar repositório privado com outra hospedagem.

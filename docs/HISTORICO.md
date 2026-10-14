@@ -4,6 +4,16 @@ Entradas mais recentes no topo. Cada versão diz **o que mudou** e **por quê**.
 
 ---
 
+## v0.11 — 14/10/2026 — Gestão da casa e várias casas por pessoa
+**Pedido:** controle de mensalidades com comprovante, calendário, materiais de trabalho e poder ser filho de mais de um terreiro.
+- **Várias casas por pessoa:** cada pessoa tem um vínculo com cada casa (papel e aprovação próprios) e troca de casa na aba Casa. Quem já tem conta entra em outra casa pelo link de convite, sem criar outra conta. Tirar alguém de uma casa não apaga a conta dele.
+- **Contador:** função extra que se soma ao papel (zelador e contador, membro e contador).
+- **Mensalidades e contribuições (Ideia 01):** valor padrão da casa com exceções por filho (valor próprio ou isenção); contribuições avulsas (ex.: festa de Erê) para todos ou para filhos escolhidos. O filho informa o pagamento e anexa o comprovante; o zelador ou o contador confirma ou recusa com motivo. Tela "Quem pagou" com lista de pendentes para copiar no WhatsApp e registro de pagamento em dinheiro.
+- **Calendário (Ideia 03):** eventos da casa (festa, gira, obrigação, reunião, mutirão) e feriados nacionais calculados automaticamente; aviso quando um evento é marcado e lembrete na véspera; botão para adicionar à agenda do celular.
+- **Materiais de trabalho (Ideia 02):** estoque de qualquer tipo de material (folhas, animais, velas, louças, bebidas…), entradas e saídas com histórico e aviso quando chega ao mínimo. O zelador escolhe quem vê: toda a casa ou filhos específicos, e quem pode editar.
+- Nova aba **Casa** no menu, reunindo Calendário, Mensalidades, Obrigações, Materiais, Validar e Filhos da casa.
+- Política de Privacidade atualizada com os novos dados (pagamentos e comprovantes).
+
 ## v0.10 — 13/10/2026 — Notificações, uso sem internet e identificador mais forte
 **Pedido:** avisar no celular, permitir marcar pontos sem sinal (no mato) e melhorar a identificação pela foto.
 - **Notificações no celular (Web Push):** o zelador recebe aviso de pedido de entrada; validadores, de folhas e pontos novos para conferir; a pessoa, quando é aprovada e quando o ponto dela é aprovado. No iPhone, só com o app instalado na tela inicial (regra da Apple).

@@ -4,24 +4,24 @@ import { avisar } from '../lib/avisos'
 import Convites from '../components/Convites'
 import { useSessao } from '../lib/sessao'
 import { linkDoConvite, mensagemDeErro, supabase } from '../lib/supabase'
-import { ROTULO_PAPEL, type Papel, type Perfil, type Terreiro } from '../lib/tipos'
+import { ROTULO_PAPEL, type MembroDaCasa, type Papel, type Terreiro } from '../lib/tipos'
 
 const NACOES = ['Candomblé de Ketu', 'Candomblé de Angola', 'Candomblé Jeje', 'Umbanda', 'Umbanda / Jurema / Quimbanda', 'Jurema', 'Quimbanda']
 
 export default function Admin() {
   const { perfil, recarregarPerfil } = useSessao()
   const [terreiros, setTerreiros] = useState<Terreiro[]>([])
-  const [perfis, setPerfis] = useState<Perfil[]>([])
+  const [vinculos, setVinculos] = useState<MembroDaCasa[]>([])
   const [aberto, setAberto] = useState<string | null>(null)
   const [erro, setErro] = useState('')
 
   const carregar = useCallback(async () => {
     const [t, p] = await Promise.all([
       supabase.from('terreiros').select('id, nome, nacao').order('nome'),
-      supabase.from('perfis').select('*').order('created_at'),
+      supabase.from('membros').select('*, perfis(apelido)').order('created_at'),
     ])
     setTerreiros((t.data ?? []) as Terreiro[])
-    setPerfis((p.data ?? []) as Perfil[])
+    setVinculos((p.data ?? []) as unknown as MembroDaCasa[])
   }, [])
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function Admin() {
     await carregar()
   }
 
-  const pendentes = perfis.filter((p) => !p.aprovado)
+  const pendentes = vinculos.filter((v) => !v.aprovado)
   const nomeTerreiro = (id: string | null) => terreiros.find((t) => t.id === id)?.nome ?? 'Sem terreiro'
 
   return (
@@ -51,7 +51,7 @@ export default function Admin() {
         <h2>Terreiros ({terreiros.length})</h2>
         {terreiros.length === 0 && <p className="sutil">Nenhum terreiro ainda. Crie o primeiro acima.</p>}
         {terreiros.map((t) => {
-          const membros = perfis.filter((p) => p.terreiro_id === t.id)
+          const membros = vinculos.filter((v) => v.terreiro_id === t.id)
           const zeladores = membros.filter((p) => p.papel === 'zelador' && p.aprovado)
           return (
             <div key={t.id} className="cartao">
@@ -61,7 +61,7 @@ export default function Admin() {
                   <span className="sutil"> · {t.nacao}</span>
                   <div className="sutil">
                     {membros.filter((m) => m.aprovado).length} membro(s) ·{' '}
-                    {zeladores.length > 0 ? `Zelador(a): ${zeladores.map((z) => z.apelido).join(', ')}` : 'Sem zelador ainda'}
+                    {zeladores.length > 0 ? `Zelador(a): ${zeladores.map((z) => z.perfis?.apelido).join(', ')}` : 'Sem zelador ainda'}
                   </div>
                 </span>
                 <span aria-hidden>{aberto === t.id ? '▲' : '▼'}</span>
@@ -76,17 +76,20 @@ export default function Admin() {
         <h2>Pedidos de entrada ({pendentes.length})</h2>
         {pendentes.length === 0 && <p className="sutil">Nenhum pedido aguardando.</p>}
         {pendentes.map((m) => (
-          <div key={m.id} className="cartao">
-            <strong>{m.apelido}</strong>
+          <div key={`${m.perfil_id}-${m.terreiro_id}`} className="cartao">
+            <strong>{m.perfis?.apelido}</strong>
             <div className="sutil">{nomeTerreiro(m.terreiro_id)} · pediu em {new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
             <div className="linha">
               <button className="primario"
-                onClick={() => executar(supabase.rpc('gerenciar_membro', { p_usuario: m.id, p_aprovado: true, p_papel: 'membro' }))}>
+                onClick={() => executar(supabase.rpc('atualizar_membro', {
+                  p_usuario: m.perfil_id, p_terreiro: m.terreiro_id, p_aprovado: true, p_papel: 'membro',
+                  p_contador: false, p_isento: false, p_mensalidade: null,
+                }))}>
                 Aprovar
               </button>
               <button className="link perigo"
-                onClick={() => confirm(`Recusar e apagar o cadastro de ${m.apelido}?`) &&
-                  executar(supabase.rpc('remover_membro', { p_usuario: m.id }))}>
+                onClick={() => confirm(`Recusar o pedido de ${m.perfis?.apelido} para ${nomeTerreiro(m.terreiro_id)}?`) &&
+                  executar(supabase.rpc('remover_da_casa', { p_usuario: m.perfil_id, p_terreiro: m.terreiro_id }))}>
                 Recusar
               </button>
             </div>

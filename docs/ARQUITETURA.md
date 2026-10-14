@@ -35,7 +35,7 @@ Hospedagem do app: GitHub Pages (publicação automática a cada mudança na bra
 src/pages/           telas (Mapa, NovoPonto, Folhas, FolhaDetalhe, Obrigações, Painel, Admin, Perfil…)
 src/components/      peças reutilizáveis (SeletorFolha, FotosDaPlanta, IdentificarFolha, Galeria…)
 src/lib/             supabase, sessão, tipos, fila sem internet, notificações, atualização, demonstração
-supabase/*.sql       banco de dados, na ordem: schema → convites → catalogo-inicial → notificacoes-e-fotos → primeiro-admin
+supabase/*.sql       banco de dados, na ordem: schema → convites → catalogo-inicial → notificacoes-e-fotos → varias-casas → gestao-da-casa → primeiro-admin
 supabase/functions/  funções do servidor (identificar, notificar)
 public/              ícones, páginas legais, receptor de notificações
 marca/               logo em vetor e arquivos gerados (npm run marca)
@@ -46,7 +46,11 @@ docs/                estes registros
 | Tabela | Para quê |
 |---|---|
 | `terreiros` | casas participantes |
-| `perfis` | uma por pessoa: apelido, terreiro, papel, aprovação, administrador, consentimento |
+| `perfis` | uma por pessoa: apelido, casa ativa, administrador, consentimento (papel e aprovação copiam o vínculo da casa ativa) |
+| `membros` | vínculo pessoa–casa: papel, aprovação, contador, mensalidade própria, isenção |
+| `financeiro_casa`, `cobrancas`, `cobranca_alvos`, `pagamentos` | mensalidades, contribuições e comprovantes |
+| `eventos` | calendário da casa (feriados são calculados no app) |
+| `materiais`, `movimentos_material`, `materiais_config`, `materiais_acesso` | estoque e quem pode ver/editar |
 | `convites` | links de convite (tipo, validade, limite de uso) |
 | `folhas` | catálogo (sem terreiro) e folhas cadastradas pelas casas (com status de validação) |
 | `fundamentos` | Orixás e usos por folha **e por terreiro** |
@@ -59,6 +63,9 @@ Toda leitura e escrita passa pelas regras de acesso (RLS). Ações sensíveis (a
 ## Fluxos importantes
 - **Cadastro:** link `?convite=CODIGO` → `info_convite` mostra a casa → `signUp` com o código e o consentimento → gatilho `novo_usuario` cria o perfil (zelador já aprovado; membro aguardando).
 - **Marcar ponto:** fotos reduzidas e sem EXIF → (opcional) função `identificar` → envio das fotos ao Storage → registro em `pontos`. Sem internet, vai para a fila no IndexedDB e é enviado depois (`src/lib/fila.ts`).
+- **Casa ativa:** `trocar_casa` muda `perfis.terreiro_id`; as funções `meu_terreiro()`, `sou_validador()` e `sou_zelador()` olham o vínculo dessa casa. As telas de gestão usam `eh_zelador_de(casa)`, `eh_gestor_financeiro_de(casa)` etc.
+- **Mensalidades:** `garantir_mensalidades` cria as cobranças do mês ao abrir a tela; o filho chama `informar_pagamento` (com o caminho do comprovante no armazenamento `comprovantes/<casa>/<pessoa>/`); zelador ou contador chama `conferir_pagamento`.
+- **Agendador:** `pg_cron` roda `lembrar_eventos()` todo dia às 9h (Brasília).
 - **Notificações:** gatilhos no banco → `notificacoes` → `pg_net` chama a função `notificar` → Web Push para os celulares inscritos.
 - **Atualização do app:** o service worker procura versão nova ao abrir e quando o app volta para a tela (`src/lib/atualizacao.ts`).
 

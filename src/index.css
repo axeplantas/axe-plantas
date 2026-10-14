@@ -1174,3 +1174,354 @@ input:disabled {
 .centro {
   text-align: center;
 }
+
+/* ---------- Casa (várias casas, gestão) ---------- */
+
+.casa-atual {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  margin: 0.25rem 0 1rem;
+  border-radius: 12px;
+  background: var(--verde-claro);
+  font-weight: 400 !important;
+}
+
+.casa-atual .casa-icone {
+  font-size: 1.5rem;
+}
+
+.casa-atual.trocar select {
+  margin-top: 0.2rem;
+  font-weight: 600;
+}
+
+.grade-casa {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.cartao-casa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 118px;
+  padding: 0.9rem;
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cartao-casa:active {
+  border-color: var(--verde);
+}
+
+.cartao-casa-icone {
+  font-size: 1.6rem;
+}
+
+.cartao-casa .sutil {
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.selo-cartao {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--perigo);
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 22px;
+  text-align: center;
+}
+
+.editar-membro {
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borda);
+  margin-top: 0.6rem;
+}
+
+/* ---------- Mensalidades ---------- */
+
+.abas-rolaveis {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.abas-rolaveis button {
+  flex: 0 0 auto;
+  padding: 0.55rem 0.8rem;
+  white-space: nowrap;
+}
+
+.resumo-financeiro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-color: #e3b341;
+  background: #fff8e6;
+}
+
+.resumo-financeiro.em-dia {
+  border-color: var(--verde);
+  background: var(--verde-claro);
+}
+
+.cobranca .cabecalho {
+  align-items: flex-start;
+}
+
+.cobranca.vencida {
+  border-color: var(--perigo);
+}
+
+.cobranca .etiqueta {
+  margin: 0.4rem 0;
+}
+
+.situacao-aberto { background: #fff1c9; color: #7a5600; }
+.situacao-informado { background: #e3edfb; color: #1d4f91; }
+.situacao-confirmado { background: var(--verde-claro); color: var(--verde); }
+.situacao-recusado { background: var(--perigo-claro); color: var(--perigo); }
+.situacao-isento { background: #eee; color: #555; }
+
+.instrucoes-pagamento {
+  border-color: var(--verde);
+}
+
+.texto-pre {
+  white-space: pre-wrap;
+  margin: 0.4rem 0 0;
+}
+
+.informar {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borda);
+}
+
+.informar .botao-foto {
+  min-height: 70px;
+}
+
+.item-pago,
+.item-situacao,
+.item-feriado {
+  padding: 0.6rem 0.2rem;
+  border-bottom: 1px solid var(--borda);
+  margin: 0;
+}
+
+.barra-progresso {
+  height: 8px;
+  border-radius: 4px;
+  background: #fff;
+  overflow: hidden;
+  margin: 0.3rem 0;
+}
+
+.barra-progresso div {
+  height: 100%;
+  background: var(--verde);
+}
+
+.lista-escolha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.4rem;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* ---------- Calendário ---------- */
+
+.calendario {
+  margin: 0.5rem 0 1rem;
+  padding: 0.7rem;
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.calendario-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.calendario-topo .botao {
+  padding: 0.3rem 0.9rem;
+  font-size: 1.2rem;
+}
+
+.calendario-grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.calendario-semana {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sutil);
+  padding: 0.2rem 0;
+}
+
+.calendario-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
+  padding: 0.35rem 0 0.2rem;
+  border-radius: 8px;
+  color: var(--texto);
+  font-size: 0.9rem;
+}
+
+.calendario-dia.hoje {
+  font-weight: 800;
+  color: var(--verde);
+  box-shadow: inset 0 0 0 2px var(--verde-claro);
+}
+
+.calendario-dia.escolhido {
+  background: var(--verde);
+  color: #fff;
+}
+
+.calendario-dia.feriado:not(.escolhido) {
+  color: var(--perigo);
+}
+
+.pontinhos {
+  display: flex;
+  gap: 2px;
+  margin-top: 3px;
+  min-height: 6px;
+}
+
+.pontinhos i,
+.legenda-calendario i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.ponto-festa, .ponto-gira, .ponto-obrigacao, .ponto-reuniao, .ponto-mutirao, .ponto-outro { background: var(--verde); }
+.ponto-obrigacao { background: var(--dourado); }
+.ponto-festa { background: #c2410c; }
+.ponto-feriado { background: var(--perigo); }
+.calendario-dia.escolhido i { box-shadow: 0 0 0 1px #fff; }
+
+.legenda-calendario {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.legenda-calendario span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.evento {
+  border-left: 4px solid var(--verde);
+}
+
+.evento-obrigacao { border-left-color: var(--dourado); }
+.evento-festa { border-left-color: #c2410c; }
+
+.feriado-cartao {
+  border-left: 4px solid var(--perigo);
+}
+
+.data-curta {
+  font-weight: 700;
+  min-width: 3rem;
+}
+
+/* ---------- Materiais ---------- */
+
+.chips.rolar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  scrollbar-width: none;
+}
+
+.chips.rolar .chip {
+  flex: 0 0 auto;
+}
+
+.chip.alerta {
+  border-color: var(--perigo);
+  color: var(--perigo);
+}
+
+.chip.alerta.ativo {
+  background: var(--perigo);
+  color: #fff;
+}
+
+.material {
+  border-bottom: 1px solid var(--borda);
+}
+
+.material .item {
+  border-bottom: none;
+}
+
+.material.acabando .material-qtd {
+  color: var(--perigo);
+}
+
+.material-qtd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 700;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.detalhe-material {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.25rem 0.9rem;
+}
+
+.historico {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.historico .linha {
+  margin: 0.15rem 0;
+  font-size: 0.85rem;
+}

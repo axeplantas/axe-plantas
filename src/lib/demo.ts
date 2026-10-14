@@ -42,6 +42,13 @@ const banco: Record<string, Linha[]> = {
   fundamentos: [],
   pontos: [],
   convites: [],
+  membros: [],
+  financeiro_casa: [],
+  cobrancas: [],
+  pagamentos: [],
+  eventos: [],
+  materiais: [],
+  movimentos_material: [],
   obrigacoes: [
     {
       id: 'o1', nome: 'Obrigação de exemplo', data: new Date(Date.now() + 86400000 * 10).toISOString().slice(0, 10),
@@ -61,6 +68,14 @@ const banco: Record<string, Linha[]> = {
 function item(id: string, folhaId: string, quantidade: string, colhida = false): Linha {
   return { id, obrigacao_id: 'o1', folha_id: folhaId, quantidade, colhida, created_at: new Date().toISOString() }
 }
+
+// Na demonstração, os vínculos (membros) espelham os perfis de exemplo.
+queueMicrotask(() => {
+  banco.membros = banco.perfis.map((p) => ({
+    perfil_id: p.id, terreiro_id: p.terreiro_id, papel: p.papel, aprovado: p.aprovado, contador: false,
+    isento: p.papel === 'zelador', mensalidade_valor: null, aprovado_em: p.created_at, created_at: p.created_at,
+  }))
+})
 
 function perfil(id: string, apelido: string, terreiro: string, papel: string, aprovado: boolean): Linha {
   return { id, apelido, terreiro_id: terreiro, papel, aprovado, created_at: new Date(Date.now() - 86400000 * 3).toISOString() }
@@ -130,6 +145,7 @@ class Consulta implements PromiseLike<any> {
   private selecao = '*'
   private contar = false
   private unico: 'single' | 'maybe' | null = null
+  private limite: number | null = null
 
   private tabela: string
 
@@ -148,8 +164,13 @@ class Consulta implements PromiseLike<any> {
   delete() { this.op = 'delete'; return this }
   eq(c: string, v: any) { this.filtros.push((l) => l[c] === v); return this }
   in(c: string, v: any[]) { this.filtros.push((l) => v.includes(l[c])); return this }
+  gte(c: string, v: any) { this.filtros.push((l) => l[c] >= v); return this }
+  lte(c: string, v: any) { this.filtros.push((l) => l[c] <= v); return this }
+  gt(c: string, v: any) { this.filtros.push((l) => l[c] > v); return this }
+  lt(c: string, v: any) { this.filtros.push((l) => l[c] < v); return this }
+  limit(n: number) { this.limite = n; return this }
   neq(c: string, v: any) { this.filtros.push((l) => l[c] !== v); return this }
-  order(c: string) { this.ordem = c; return this }
+  order(c: string) { this.ordem ??= c; return this }
   single() { this.unico = 'single'; return this }
   maybeSingle() { this.unico = 'maybe'; return this }
 
@@ -193,7 +214,7 @@ class Consulta implements PromiseLike<any> {
       linhas = [...linhas].sort((a, b) => String(a[c]).localeCompare(String(b[c]), 'pt-BR'))
     }
 
-    const resultado = linhas.map((l) => this.juntar({ ...l }))
+    const resultado = linhas.slice(0, this.limite ?? undefined).map((l) => this.juntar({ ...l }))
     if (this.unico) {
       const data = resultado[0] ?? null
       if (!data && this.unico === 'single') return { data: null, error: { message: 'Não encontrado' } }
@@ -206,6 +227,7 @@ class Consulta implements PromiseLike<any> {
   private juntar(l: Linha): Linha {
     if (this.selecao.includes('folhas(')) l.folhas = banco.folhas.find((f) => f.id === l.folha_id) ?? null
     if (this.selecao.includes('terreiros(')) l.terreiros = banco.terreiros.find((t) => t.id === l.terreiro_id) ?? null
+    if (this.selecao.includes('perfis(')) l.perfis = banco.perfis.find((p) => p.id === l.perfil_id) ?? null
     return l
   }
 }
@@ -261,8 +283,23 @@ export function criarClienteDemo(): any {
         alert('Demonstração: a conta seria excluída agora. Nada foi apagado.')
         return { data: null, error: null }
       }
+      if (['garantir_mensalidades', 'trocar_casa', 'definir_acesso_materiais'].includes(nome)) return { data: null, error: null }
+      if (nome === 'pode_ver_materiais' || nome === 'pode_editar_materiais') return { data: true, error: null }
+      if (nome === 'atualizar_membro') {
+        const v = banco.membros.find((x) => x.perfil_id === args.p_usuario && x.terreiro_id === args.p_terreiro)
+        if (v) Object.assign(v, { aprovado: args.p_aprovado, papel: args.p_papel, contador: args.p_contador, isento: args.p_isento, mensalidade_valor: args.p_mensalidade })
+        return { data: null, error: null }
+      }
+      if (nome === 'remover_da_casa') {
+        banco.membros = banco.membros.filter((x) => !(x.perfil_id === args.p_usuario && x.terreiro_id === args.p_terreiro))
+        return { data: null, error: null }
+      }
+      if (['informar_pagamento', 'conferir_pagamento', 'criar_contribuicao', 'apagar_cobranca', 'configurar_financeiro', 'aceitar_convite'].includes(nome)) {
+        alert('Demonstração: esta ação funciona no app de verdade. Aqui nada é salvo.')
+        return { data: null, error: null }
+      }
       const p = banco.perfis.find((x) => x.id === args.p_usuario)
-      if (!p) return { data: null, error: { message: 'Membro não encontrado' } }
+      if (!p) return { data: null, error: null }
       if (nome === 'gerenciar_membro') Object.assign(p, { aprovado: args.p_aprovado, papel: args.p_papel })
       if (nome === 'remover_membro') banco.perfis = banco.perfis.filter((x) => x !== p)
       return { data: null, error: null }
