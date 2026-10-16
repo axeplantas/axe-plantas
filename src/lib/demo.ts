@@ -226,7 +226,7 @@ class Consulta implements PromiseLike<any> {
   /** Imita os "relacionamentos" como folhas(...) e terreiros(...). */
   private juntar(l: Linha): Linha {
     if (this.selecao.includes('folhas(')) l.folhas = banco.folhas.find((f) => f.id === l.folha_id) ?? null
-    if (this.selecao.includes('terreiros(')) l.terreiros = banco.terreiros.find((t) => t.id === l.terreiro_id) ?? null
+    if (/terreiros(![\w]+)?\(/.test(this.selecao)) l.terreiros = banco.terreiros.find((t) => t.id === l.terreiro_id) ?? null
     if (this.selecao.includes('perfis(')) l.perfis = banco.perfis.find((p) => p.id === l.perfil_id) ?? null
     return l
   }

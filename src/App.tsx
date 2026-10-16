@@ -11,6 +11,7 @@ import Casa from './pages/Casa'
 import Entrar from './pages/Entrar'
 import Financeiro from './pages/Financeiro'
 import FolhaDetalhe from './pages/FolhaDetalhe'
+import Gestao from './pages/Gestao'
 import Folhas from './pages/Folhas'
 import Mapa from './pages/Mapa'
 import Materiais from './pages/Materiais'
@@ -95,6 +96,7 @@ export default function App() {
               <Route path="casa/calendario" element={<Calendario />} />
               <Route path="casa/materiais" element={<Materiais />} />
               <Route path="casa/membros" element={<Membros />} />
+              <Route path="casa/gestao" element={<Gestao />} />
             </>
           )}
           {ehValidador(perfil) && <Route path="painel" element={<Painel />} />}

@@ -482,3 +482,19 @@ grant execute on function
   public.atualizar_membro(uuid, uuid, boolean, text, boolean, boolean, numeric),
   public.remover_da_casa(uuid, uuid)
   to authenticated;
+
+-- Zelador (ou administrador) edita o nome e a nação da própria casa
+create or replace function public.atualizar_terreiro(p_terreiro uuid, p_nome text, p_nacao text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not (public.sou_admin() or public.eh_zelador_de(p_terreiro)) then
+    raise exception 'Somente o zelador da casa pode editar os dados dela';
+  end if;
+  if coalesce(trim(p_nome), '') = '' then
+    raise exception 'Informe o nome da casa';
+  end if;
+  update public.terreiros set nome = trim(p_nome), nacao = trim(p_nacao) where id = p_terreiro;
+end $$;
+
+revoke execute on function public.atualizar_terreiro(uuid, text, text) from public, anon;
+grant execute on function public.atualizar_terreiro(uuid, text, text) to authenticated;

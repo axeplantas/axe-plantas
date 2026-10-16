@@ -4,6 +4,14 @@ Entradas mais recentes no topo. Cada versão diz **o que mudou** e **por quê**.
 
 ---
 
+## v0.12 — 16/10/2026 — Correção grave e área de Gestão
+**Problema real:** depois da v0.11 o app não mostrava as casas nem o financeiro ("Escolha uma casa primeiro").
+- **Causa:** com as novas tabelas, o servidor passou a ver mais de um caminho entre "perfil" e "terreiro" e recusou a consulta do perfil por ambiguidade; o app achou que estava sem internet e abriu com dados antigos guardados no celular. Quem se cadastrasse nesse período não conseguiria entrar.
+- **Correção:** as consultas indicam explicitamente o caminho; se a lista de casas falhar, o app tenta de novo e usa a casa do perfil enquanto isso.
+- **Gestão da casa (zelador):** painel com os números da casa (filhos, pedidos, comprovantes, recebido no mês, próximo evento, materiais acabando), o que precisa de atenção e acesso a tudo o que ele administra; edição do nome e da nação da casa.
+- "Mensalidades" passou a se chamar **Financeiro**; "Filhos da casa" virou **Filhos e funções**, dentro da Gestão.
+- Botão de localização do mapa redesenhado e centralizado.
+
 ## v0.11 — 14/10/2026 — Gestão da casa e várias casas por pessoa
 **Pedido:** controle de mensalidades com comprovante, calendário, materiais de trabalho e poder ser filho de mais de um terreiro.
 - **Várias casas por pessoa:** cada pessoa tem um vínculo com cada casa (papel e aprovação próprios) e troca de casa na aba Casa. Quem já tem conta entra em outra casa pelo link de convite, sem criar outra conta. Tirar alguém de uma casa não apaga a conta dele.

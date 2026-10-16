@@ -60,6 +60,8 @@ docs/                estes registros
 
 Toda leitura e escrita passa pelas regras de acesso (RLS). Ações sensíveis (aprovar membro, criar convite, excluir conta) são funções `security definer` com verificação de papel.
 
+> **Atenção ao consultar "terreiros" a partir de "perfis":** as duas tabelas se ligam por mais de um caminho (`perfis.terreiro_id`, `membros`, `materiais_acesso`). Use sempre o caminho explícito, por exemplo `terreiros!perfis_terreiro_id_fkey(nome)`, ou o servidor recusa a consulta (erro PGRST201).
+
 ## Fluxos importantes
 - **Cadastro:** link `?convite=CODIGO` → `info_convite` mostra a casa → `signUp` com o código e o consentimento → gatilho `novo_usuario` cria o perfil (zelador já aprovado; membro aguardando).
 - **Marcar ponto:** fotos reduzidas e sem EXIF → (opcional) função `identificar` → envio das fotos ao Storage → registro em `pontos`. Sem internet, vai para a fila no IndexedDB e é enviado depois (`src/lib/fila.ts`).

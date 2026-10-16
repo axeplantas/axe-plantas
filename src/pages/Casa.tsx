@@ -50,6 +50,18 @@ export default function Casa() {
       <h1>Casa</h1>
       <TrocarCasa />
 
+      {ehZelador(casaAtiva) && (
+        <Link to="/casa/gestao" className="cartao-gestao">
+          <span className="cartao-casa-icone">⚙️</span>
+          <span className="cresce">
+            <strong>Gestão da casa</strong>
+            <span className="sutil">Filhos e funções, financeiro, calendário, materiais e convites</span>
+          </span>
+          {pendencias + paraConferir > 0 && <b className="selo-cartao">{pendencias + paraConferir}</b>}
+          <span aria-hidden>›</span>
+        </Link>
+      )}
+
       <div className="grade-casa">
         <Link to="/casa/calendario" className="cartao-casa">
           <span className="cartao-casa-icone">📅</span>
@@ -65,11 +77,11 @@ export default function Casa() {
 
         <Link to="/casa/financeiro" className="cartao-casa">
           <span className="cartao-casa-icone">💰</span>
-          <strong>Mensalidades</strong>
+          <strong>Financeiro</strong>
           <span className="sutil">
             {ehGestorFinanceiro(casaAtiva) && paraConferir > 0
               ? `${paraConferir} comprovante(s) para conferir`
-              : 'Pagamentos e contribuições'}
+              : ehGestorFinanceiro(casaAtiva) ? 'Mensalidades, contribuições e comprovantes' : 'Minhas mensalidades e contribuições'}
           </span>
           {paraConferir > 0 && ehGestorFinanceiro(casaAtiva) && <b className="selo-cartao">{paraConferir}</b>}
         </Link>
@@ -97,13 +109,6 @@ export default function Casa() {
           </Link>
         )}
 
-        {ehZelador(casaAtiva) && (
-          <Link to="/casa/membros" className="cartao-casa">
-            <span className="cartao-casa-icone">👥</span>
-            <strong>Filhos da casa</strong>
-            <span className="sutil">Papéis, contador e convites</span>
-          </Link>
-        )}
       </div>
 
       {!ehEquipe(casaAtiva) && (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Convites from '../components/Convites'
 import { avisar } from '../lib/avisos'
 import { ehZelador, useSessao } from '../lib/sessao'
@@ -10,6 +10,7 @@ import { formatarReais, ROTULO_PAPEL, type MembroDaCasa, type Papel } from '../l
 export default function Membros() {
   const { perfil, casaAtiva } = useSessao()
   const navegar = useNavigate()
+  const local = useLocation()
   const terreiro = casaAtiva?.terreiro_id
   const [membros, setMembros] = useState<MembroDaCasa[]>([])
   const [padrao, setPadrao] = useState<number | null>(null)
@@ -29,6 +30,13 @@ export default function Membros() {
   useEffect(() => {
     carregar()
   }, [carregar])
+
+  // Atalho "Convidar filhos" da gestão: rola até os convites.
+  useEffect(() => {
+    if (local.hash === '#convites' && membros.length > 0) {
+      document.getElementById('convites')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [local.hash, membros.length])
 
   if (!ehZelador(casaAtiva) || !terreiro) {
     return <div className="pagina"><p>Só o zelador da casa vê esta tela.</p></div>
@@ -64,8 +72,8 @@ export default function Membros() {
 
   return (
     <div className="pagina">
-      <button className="link" onClick={() => navegar('/casa')}>← Casa</button>
-      <h1>Filhos da casa</h1>
+      <button className="link" onClick={() => navegar('/casa/gestao')}>← Gestão da casa</button>
+      <h1>Filhos e funções</h1>
       <p className="sutil">{casaAtiva?.terreiros?.nome}</p>
 
       {pendentes.length > 0 && (
@@ -86,7 +94,10 @@ export default function Membros() {
 
       <section>
         <h2>Na casa ({aprovados.length})</h2>
-        <p className="sutil">Toque em alguém para mudar o papel, a função de contador ou a mensalidade.</p>
+        <p className="sutil">
+          Toque em alguém para mudar a função. <strong>Validador</strong> confere folhas e pontos e cuida do calendário;{' '}
+          <strong>contador</strong> confere comprovantes e vê o financeiro (pode ser junto com qualquer papel).
+        </p>
         {aprovados.map((m) => {
           const ehEu = m.perfil_id === perfil?.id
           const valor = m.isento ? 'Isento' : formatarReais(m.mensalidade_valor ?? padrao)
@@ -110,7 +121,7 @@ export default function Membros() {
         })}
       </section>
 
-      <section className="cartao">
+      <section className="cartao" id="convites">
         <Convites terreiroId={terreiro} tipo="membro"
           titulo="👥 Convidar filhos da casa"
           explicacao="Envie este link no grupo da casa. Quem já tem conta (por ser de outra casa) entra com a mesma conta. Vale por 30 dias." />

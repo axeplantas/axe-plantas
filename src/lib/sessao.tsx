@@ -55,20 +55,23 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [carregando, setCarregando] = useState(true)
   const [recuperandoSenha, setRecuperandoSenha] = useState(false)
 
-  const buscarPerfil = useCallback(async (usuarioId: string | undefined) => {
+  const buscarPerfil = useCallback(async (usuarioId: string | undefined, tentativa = 0): Promise<void> => {
     if (!usuarioId) {
       setPerfil(null)
       setCasas([])
       return
     }
+    // As ligações com "terreiros" são explícitas (!…_fkey): perfis e terreiros se ligam por mais de
+    // um caminho (casa ativa, vínculos, acesso a materiais) e o servidor recusa a consulta ambígua.
     const [resPerfil, resCasas] = await Promise.all([
-      supabase.from('perfis').select('*, terreiros(nome, nacao)').eq('id', usuarioId).maybeSingle(),
+      supabase.from('perfis').select('*, terreiros!perfis_terreiro_id_fkey(nome, nacao)').eq('id', usuarioId).maybeSingle(),
       supabase
         .from('membros')
-        .select('terreiro_id, papel, aprovado, contador, isento, mensalidade_valor, aprovado_em, terreiros(nome, nacao)')
+        .select('terreiro_id, papel, aprovado, contador, isento, mensalidade_valor, aprovado_em, terreiros!membros_terreiro_id_fkey(nome, nacao)')
         .eq('perfil_id', usuarioId),
     ])
     if (resPerfil.error) {
+      console.warn('Não foi possível carregar o perfil:', resPerfil.error.message)
       // Sem internet: usa o cadastro guardado no celular para o app continuar abrindo.
       const guardado = lerGuardado(usuarioId)
       if (guardado) {
@@ -78,6 +81,16 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       return
     }
     const novoPerfil = resPerfil.data as Perfil | null
+    if (resCasas.error) {
+      // Falhou só a lista de casas (sinal fraco, sessão renovando...): mantém a última
+      // conhecida e tenta de novo em instantes, em vez de mostrar o app "sem casa".
+      console.warn('Não foi possível carregar as casas:', resCasas.error.message)
+      const guardado = lerGuardado(usuarioId)
+      setPerfil(novoPerfil)
+      if (guardado?.casas.length) setCasas(guardado.casas)
+      if (tentativa < 3) setTimeout(() => buscarPerfil(usuarioId, tentativa + 1), 2000 * (tentativa + 1))
+      return
+    }
     const novasCasas = ((resCasas.data ?? []) as unknown as Casa[]).sort((a, b) =>
       (a.terreiros?.nome ?? '').localeCompare(b.terreiros?.nome ?? '', 'pt-BR'),
     )
@@ -110,11 +123,26 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     await recarregarPerfil()
   }, [recarregarPerfil])
 
+  // Se a lista de casas ainda não chegou, usa a casa ativa que já vem no perfil.
+  const casaDoPerfil: Casa | null = perfil?.terreiro_id
+    ? {
+        terreiro_id: perfil.terreiro_id,
+        papel: perfil.papel,
+        aprovado: perfil.aprovado,
+        contador: false,
+        isento: false,
+        mensalidade_valor: null,
+        aprovado_em: null,
+        terreiros: perfil.terreiros ?? null,
+      }
+    : null
+  const casaAtiva = casas.find((c) => c.terreiro_id === perfil?.terreiro_id) ?? casaDoPerfil
+
   const valor: Sessao = {
     sessao,
     perfil,
-    casas,
-    casaAtiva: casas.find((c) => c.terreiro_id === perfil?.terreiro_id) ?? null,
+    casas: casas.length > 0 || !casaDoPerfil ? casas : [casaDoPerfil],
+    casaAtiva,
     carregando,
     recuperandoSenha,
     fimRecuperacao: () => setRecuperandoSenha(false),

@@ -1,43 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { avisar } from '../lib/avisos'
+import { hoje, ROTULO_SITUACAO, seAplica, valorDe, type Pessoa, type Situacao } from '../lib/financeiro'
 import { prepararFoto } from '../lib/imagem'
 import { ehGestorFinanceiro, useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
 import {
   formatarDataCurta, formatarReais,
-  type Casa, type Cobranca, type FinanceiroCasa, type MembroDaCasa, type Pagamento, type SituacaoPagamento,
+  type Cobranca, type FinanceiroCasa, type MembroDaCasa, type Pagamento,
 } from '../lib/tipos'
-
-type Situacao = SituacaoPagamento | 'aberto'
-
-const ROTULO_SITUACAO: Record<Situacao, string> = {
-  aberto: 'Em aberto',
-  informado: 'Enviado, aguardando conferência',
-  confirmado: 'Pago',
-  recusado: 'Recusado',
-  isento: 'Isento',
-}
-
-function hoje(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-/** O que alguém precisa saber de um filho para calcular cobranças. */
-type Pessoa = Pick<Casa, 'isento' | 'mensalidade_valor' | 'aprovado_em'> & { perfil_id: string; created_at?: string }
-
-function seAplica(c: Cobranca, p: Pessoa, config: FinanceiroCasa | null, alvos: Set<string>): boolean {
-  if (c.tipo === 'contribuicao') return c.para_todos || alvos.has(`${c.id}:${p.perfil_id}`)
-  if (!config?.cobra_mensalidade || p.isento || !c.competencia) return false
-  const entrada = (p.aprovado_em ?? p.created_at ?? '').slice(0, 7)
-  return !entrada || c.competencia.slice(0, 7) >= entrada
-}
-
-function valorDe(c: Cobranca, p: Pessoa, config: FinanceiroCasa | null): number {
-  if (c.tipo === 'contribuicao') return c.valor ?? 0
-  return c.valor ?? p.mensalidade_valor ?? config?.valor_padrao ?? 0
-}
 
 async function abrirComprovante(caminho: string) {
   const janela = window.open('', '_blank')
@@ -102,7 +73,7 @@ export default function Financeiro() {
   return (
     <div className="pagina">
       <button className="link" onClick={() => navegar('/casa')}>← Casa</button>
-      <h1>Mensalidades</h1>
+      <h1>Financeiro</h1>
       <p className="sutil">{casaAtiva.terreiros?.nome}</p>
 
       {gestor && (
