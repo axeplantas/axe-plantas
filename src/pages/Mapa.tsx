@@ -1,7 +1,8 @@
 import type { LatLngBoundsExpression, LatLngExpression, Map as MapaLeaflet } from 'leaflet'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet'
+import { Circle, CircleMarker, MapContainer, Popup } from 'react-leaflet'
 import { Link, useSearchParams } from 'react-router-dom'
+import { BotaoCamada, Camada, useCamada } from '../components/CamadaMapa'
 import Galeria from '../components/Galeria'
 import { avisar } from '../lib/avisos'
 import { linkComoChegar } from '../lib/distancia'
@@ -25,6 +26,8 @@ export default function Mapa() {
   const [pontos, setPontos] = useState<Ponto[]>([])
   const [carregado, setCarregado] = useState(false)
   const [eu, setEu] = useState<[number, number] | null>(null)
+  const [raio, setRaio] = useState(0)
+  const [camada, alternarCamada] = useCamada('mapa')
   const [semGps, setSemGps] = useState(false)
   const [erro, setErro] = useState('')
   const mapa = useRef<MapaLeaflet | null>(null)
@@ -49,6 +52,7 @@ export default function Mapa() {
       (pos) => {
         const posicao: [number, number] = [pos.coords.latitude, pos.coords.longitude]
         setEu(posicao)
+        setRaio(Math.round(pos.coords.accuracy))
         setSemGps(false)
         if (centralizar) mapa.current?.setView(posicao, 15)
       },
@@ -56,7 +60,7 @@ export default function Mapa() {
         setSemGps(true)
         if (centralizar) avisar('Ative a localização do celular para o app saber onde você está.', 'erro')
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: centralizar ? 0 : 30000 },
     )
   }
 
@@ -147,15 +151,15 @@ export default function Mapa() {
       )}
 
       <MapContainer center={CENTRO_BRASIL} zoom={4} className="mapa" ref={mapa}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
-        />
+        <Camada tipo={camada} />
 
+        {eu && raio > 15 && (
+          <Circle center={eu} radius={raio} interactive={false}
+            pathOptions={{ color: '#1a73e8', weight: 1, fillColor: '#1a73e8', fillOpacity: 0.1 }} />
+        )}
         {eu && (
           <CircleMarker center={eu} radius={8} pathOptions={{ color: '#fff', weight: 3, fillColor: '#1a73e8', fillOpacity: 1 }}>
-            <Popup>Você está aqui</Popup>
+            <Popup>Você está aqui{raio ? ` (precisão ~${raio} m)` : ''}</Popup>
           </CircleMarker>
         )}
 
@@ -195,6 +199,8 @@ export default function Mapa() {
           </CircleMarker>
         ))}
       </MapContainer>
+
+      <BotaoCamada tipo={camada} aoAlternar={alternarCamada} className="flutuante-mapa" />
 
       <button className="botao-localizar" onClick={() => localizar(true)} aria-label="Ir para a minha localização">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">

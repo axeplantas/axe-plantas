@@ -51,7 +51,7 @@ export default defineConfig({
         // Guarda os pedaços do mapa já vistos, para abrir mesmo com sinal fraco.
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/tile\.openstreetmap\.org\//,
+            urlPattern: /^https:\/\/(tile\.openstreetmap\.org|server\.arcgisonline\.com)\//,
             handler: 'CacheFirst',
             options: {
               cacheName: 'mapa',

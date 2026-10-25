@@ -4,6 +4,14 @@ Entradas mais recentes no topo. Cada versão diz **o que mudou** e **por quê**.
 
 ---
 
+## v0.13 — 25/10/2026 — Localização e identificação mais precisas
+**Problema relatado:** a marcação às vezes ficava com ~60 m de erro, e o identificador errava.
+- **GPS:** em vez de aceitar a primeira posição (que costuma vir do Wi-Fi ou da antena), o app escuta o GPS por até 30 s e vai levando a mira para a leitura mais precisa, mostrando "melhorando… ~X m". Um círculo azul mostra a margem de erro.
+- **Foto de satélite** no mapa e na marcação (botão Satélite/Ruas), para pôr a mira exatamente na planta; também guardada para uso sem internet.
+- Se a pessoa arrasta o mapa, vale o ajuste dela.
+- O mapa principal passou a pedir a localização de alta precisão.
+- **Identificação:** dicas de como fotografar antes da primeira foto e aviso quando o identificador fica em dúvida, sugerindo uma foto de outra parte da planta.
+
 ## v0.12 — 16/10/2026 — Correção grave e área de Gestão
 **Problema real:** depois da v0.11 o app não mostrava as casas nem o financeiro ("Escolha uma casa primeiro").
 - **Causa:** com as novas tabelas, o servidor passou a ver mais de um caminho entre "perfil" e "terreiro" e recusou a consulta do perfil por ambiguidade; o app achou que estava sem internet e abriu com dados antigos guardados no celular. Quem se cadastrasse nesse período não conseguiria entrar.

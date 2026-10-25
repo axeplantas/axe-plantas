@@ -1,12 +1,14 @@
 import type { LatLngExpression } from 'leaflet'
-import { useEffect, useState, type FormEvent } from 'react'
-import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Circle, CircleMarker, MapContainer, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { BotaoCamada, Camada, useCamada } from '../components/CamadaMapa'
 import FotosDaPlanta, { type FotoPlanta } from '../components/FotosDaPlanta'
 import IdentificarFolha, { type FolhaResumo } from '../components/IdentificarFolha'
 import SeletorFolha from '../components/SeletorFolha'
 import { avisar } from '../lib/avisos'
 import { ehErroDeRede, enviarPonto, guardarPonto } from '../lib/fila'
+import { buscarPosicaoPrecisa, type Leitura } from '../lib/gps'
 import { prepararFoto } from '../lib/imagem'
 import { ehValidador, useSessao } from '../lib/sessao'
 import { mensagemDeErro, supabase } from '../lib/supabase'
@@ -32,8 +34,13 @@ export default function NovoPonto() {
   const [folhaNova, setFolhaNova] = useState(false)
   const [folhaId, setFolhaId] = useState(params.get('folha') ?? '')
   const [posicao, setPosicao] = useState<[number, number] | null>(null)
-  const [precisao, setPrecisao] = useState<number | null>(null)
+  const [gps, setGps] = useState<Leitura | null>(null)
+  const [refinando, setRefinando] = useState(false)
+  const [ajustadoAMao, setAjustadoAMao] = useState(false)
   const [versaoGps, setVersaoGps] = useState(0)
+  const [camada, alternarCamada] = useCamada('marcar', 'satelite')
+  const pararGps = useRef<(() => void) | null>(null)
+  const mexeu = useRef(false)
   const [zoom, setZoom] = useState(18)
   const [erroGps, setErroGps] = useState('')
   const [fotos, setFotos] = useState<FotoPlanta[]>([])
@@ -66,22 +73,38 @@ export default function NovoPonto() {
     return () => {
       window.removeEventListener('online', mudou)
       window.removeEventListener('offline', mudou)
+      pararGps.current?.()
     }
   }, [])
 
+  // Escuta o GPS por até 30 s e vai levando a mira para a leitura mais precisa,
+  // até a pessoa arrastar o mapa (aí vale o ajuste dela).
   function pegarLocalizacao() {
     setErroGps('')
-    if (!navigator.geolocation) return setErroGps('Este celular não informa a localização.')
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setPosicao([pos.coords.latitude, pos.coords.longitude])
-        setPrecisao(Math.round(pos.coords.accuracy))
-        setVersaoGps((v) => v + 1)
-        setZoom(18)
+    setRefinando(true)
+    setAjustadoAMao(false)
+    mexeu.current = false
+    pararGps.current?.()
+    pararGps.current = buscarPosicaoPrecisa(
+      (leitura) => {
+        setGps(leitura)
+        if (!mexeu.current) {
+          setPosicao([leitura.lat, leitura.lng])
+          setVersaoGps((v) => v + 1)
+        }
       },
-      () => setErroGps('Não foi possível pegar a localização. Permita o acesso ao GPS ou arraste o mapa até o local.'),
-      { enableHighAccuracy: true, timeout: 20000 },
+      (falha) => {
+        setRefinando(false)
+        if (falha) setErroGps(falha)
+      },
     )
+  }
+
+  function arrastou() {
+    if (mexeu.current) return
+    mexeu.current = true
+    setAjustadoAMao(true)
+    pararGps.current?.()
   }
 
   function validar(): string | null {
@@ -177,27 +200,30 @@ export default function NovoPonto() {
         <p className="sutil">Arraste o mapa até a mira ficar em cima da planta.</p>
         <div className="mapa-mira">
           {posicao ? (
-            <MapContainer key={versaoGps} center={posicao as LatLngExpression} zoom={precisao === null ? 4 : 18}
-              className="mapa">
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                maxZoom={19}
-              />
-              <SeguirCentro aoMudar={(p, z) => { setPosicao(p); setZoom(z) }} />
+            <MapContainer center={posicao as LatLngExpression} zoom={gps ? 19 : 4} className="mapa">
+              <Camada tipo={camada} />
+              {gps && (
+                <>
+                  <Circle center={[gps.lat, gps.lng]} radius={gps.precisao} interactive={false}
+                    pathOptions={{ color: '#1a73e8', weight: 1, fillColor: '#1a73e8', fillOpacity: 0.12 }} />
+                  <CircleMarker center={[gps.lat, gps.lng]} radius={6} interactive={false}
+                    pathOptions={{ color: '#fff', weight: 2, fillColor: '#1a73e8', fillOpacity: 1 }} />
+                </>
+              )}
+              <IrPara posicao={posicao} versao={versaoGps} />
+              <SeguirCentro aoMudar={(p, z) => { setPosicao(p); setZoom(z) }} aoArrastar={arrastou} />
             </MapContainer>
           ) : (
             <div className="mapa mapa-vazio">{erroGps || 'Procurando sua localização…'}</div>
           )}
           {posicao && <div className="mira" aria-hidden>✛</div>}
+          {posicao && <BotaoCamada tipo={camada} aoAlternar={alternarCamada} className="no-mapa" />}
         </div>
+        <SituacaoGps gps={gps} refinando={refinando} ajustadoAMao={ajustadoAMao} />
         <div className="linha">
-          {precisao !== null && (
-            <span className={precisao > 50 ? 'aviso-pequeno' : 'sutil'}>
-              {precisao > 50 ? `GPS impreciso (~${precisao} m): arraste o mapa até o lugar exato.` : `Precisão do GPS: ~${precisao} m`}
-            </span>
-          )}
-          <button type="button" className="link" onClick={pegarLocalizacao}>Usar minha posição</button>
+          <button type="button" className="link" onClick={pegarLocalizacao} disabled={refinando}>
+            {refinando ? 'Buscando sinal do GPS…' : '📍 Pegar minha posição de novo'}
+          </button>
           {!posicao && erroGps && (
             <button type="button" className="link" onClick={() => { setPosicao([-14.235, -51.925]); setZoom(4) }}>
               Escolher no mapa
@@ -246,8 +272,42 @@ export default function NovoPonto() {
   )
 }
 
-function SeguirCentro({ aoMudar }: { aoMudar: (p: [number, number], zoom: number) => void }) {
+/** Mostra quão boa está a posição e o que fazer quando ela está ruim. */
+function SituacaoGps({ gps, refinando, ajustadoAMao }: { gps: Leitura | null; refinando: boolean; ajustadoAMao: boolean }) {
+  if (ajustadoAMao) return <p className="sutil">✋ Posição ajustada por você: vale onde a mira está.</p>
+  if (!gps) return null
+  if (refinando) {
+    return (
+      <p className="sutil">
+        📡 Melhorando a precisão… agora <strong>~{gps.precisao} m</strong>. Fique parado(a) uns segundos, de preferência
+        ao ar livre.
+      </p>
+    )
+  }
+  if (gps.precisao <= 15) return <p className="sutil">✅ Precisão do GPS: ~{gps.precisao} m.</p>
+  return (
+    <p className="aviso-pequeno">
+      GPS impreciso (~{gps.precisao} m): o círculo azul mostra onde você pode estar. Arraste o mapa até a mira ficar em
+      cima da planta (a foto de satélite ajuda) ou tente de novo longe de prédios e árvores altas.
+    </p>
+  )
+}
+
+/** Leva o mapa até a nova leitura do GPS, sem afastar o zoom que a pessoa escolheu. */
+function IrPara({ posicao, versao }: { posicao: [number, number]; versao: number }) {
+  const mapa = useMap()
+  const ultima = useRef(versao)
+  useEffect(() => {
+    if (versao === ultima.current) return
+    ultima.current = versao
+    mapa.setView(posicao, Math.max(mapa.getZoom(), 19))
+  }, [versao, posicao, mapa])
+  return null
+}
+
+function SeguirCentro({ aoMudar, aoArrastar }: { aoMudar: (p: [number, number], zoom: number) => void; aoArrastar: () => void }) {
   const mapa = useMapEvents({
+    dragstart: aoArrastar,
     moveend: () => {
       const c = mapa.getCenter()
       aoMudar([c.lat, c.lng], mapa.getZoom())

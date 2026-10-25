@@ -55,6 +55,12 @@ export default function FotosDaPlanta({ fotos, aoMudar }: { fotos: FotoPlanta[];
             onChange={(e) => { adicionar(e.target.files?.[0]); e.target.value = '' }} />
         </label>
       )}
+      {fotos.length === 0 && (
+        <p className="sutil">
+          Para o identificador acertar: <strong>uma parte da planta por foto</strong>, bem de perto, ocupando a tela e
+          em foco. Uma folha sobre a palma da mão ou um fundo liso ajuda muito. Evite várias plantas misturadas.
+        </p>
+      )}
       {fotos.length === 1 && (
         <p className="sutil">Dica: uma segunda foto, de outra parte da planta, deixa a identificação bem mais certeira.</p>
       )}

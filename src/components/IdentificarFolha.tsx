@@ -125,6 +125,13 @@ export default function IdentificarFolha({ fotos, folhas, aoEscolher }: {
         <p className="aviso">Não reconheci nenhuma planta. Tente uma foto mais de perto, de uma folha ou flor, com boa luz.</p>
       ) : (
         <>
+          {sugestoes[0].confianca < 30 && (
+            <p className="aviso-pequeno">
+              O identificador ficou em dúvida. {fotos.length < 3
+                ? 'Acrescente uma foto de outra parte (flor, fruto ou a planta inteira) e tente de novo: costuma resolver.'
+                : 'Tente fotos mais de perto, com boa luz, uma parte da planta por foto.'}
+            </p>
+          )}
           <p className="sutil">
             Toque na planta certa. <strong>É só uma sugestão:</strong> confira antes, porque algumas plantas tóxicas são
             parecidas com outras.
